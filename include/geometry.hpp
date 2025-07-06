@@ -2,8 +2,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <expected>
 #include <format>
+#include <limits>
 #include <numbers>
 #include <optional>
 #include <print>
@@ -12,13 +14,6 @@
 #include <vector>
 
 namespace geometry {
-
-/*
- * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
- */
-struct DummyClass {
-    DummyClass(std::vector<Shape>) {}
-};
 
 /*
  * Добавьте к методам класса Point2D и Lines2DDyn все необходимые аттрибуты и спецификаторы
@@ -31,20 +26,22 @@ struct Point2D {
     constexpr Point2D(double x, double y) : x(x), y(y) {}
 
     // Comparison
-    bool operator<(const Point2D &other) { return x < other.x && y < other.y; }
+    bool operator<(const Point2D &other) const noexcept { return x < other.x && y < other.y; }
     bool operator==(const Point2D &other) { return x == other.x && y == other.y; }
 
     // Binary math operators
-    Point2D operator+(const Point2D &other) { return {x + other.x, y + other.y}; }
-    Point2D operator-(const Point2D &other) { return {x - other.x, y - other.y}; }
-    Point2D operator*(double value) { return {x * value, y * value}; }
-    Point2D operator/(double value) { return {x / value, y / value}; }
+    [[nodiscard]] Point2D operator+(const Point2D &other) const noexcept { return {x + other.x, y + other.y}; }
+    // операторы должны быть const и noexcept, так как методы в которых они вызываются const
+    // и noexcept
+    [[nodiscard]] Point2D operator-(const Point2D &other) const noexcept { return {x - other.x, y - other.y}; }
+    [[nodiscard]] Point2D operator*(double value) const noexcept { return {x * value, y * value}; }
+    [[nodiscard]] Point2D operator/(double value) const { return {x / value, y / value}; }
 
     // Binary geometry operations
     double Dot(const Point2D &other) { return x * other.x + y * other.y; }
-    double Cross(const Point2D &other) { return x * other.y - y * other.x; }
-    double Length() { return std::sqrt(x * x + y * y); }
-    double DistanceTo(const Point2D &other) { return (*this - other).Length(); }
+    [[nodiscard]] double Cross(const Point2D &other) const noexcept { return x * other.y - y * other.x; }
+    [[nodiscard]] double Length() const noexcept { return std::sqrt(x * x + y * y); }
+    [[nodiscard]] double DistanceTo(const Point2D &other) const noexcept { return (*this - other).Length(); }
 
     Point2D Normalize() {
         const double len = Length();
@@ -81,18 +78,100 @@ struct BoundingBox {
     double min_x, min_y, max_x, max_y;
 
     /* ваш код здесь */
+    [[nodiscard]] double Width() const noexcept { return max_x - min_x; }
+
+    [[nodiscard]] double Height() const noexcept { return max_y - min_x; }
+
+    [[nodiscard]] Point2D Center() const noexcept { return {(min_x + max_x) / 2.0, (min_y + max_x) / 2.0}; }
+
+    [[nodiscard]] bool Overlaps(const BoundingBox &box) const noexcept {
+        return !(max_x < box.min_x || min_x > box.max_x || max_y < box.min_y || min_y > box.max_y);
+    }
 };
 
 struct Line {
     Point2D start, end;
 
     /* ваш код здесь */
+    // Вопрос к ревьюверу, так как в описании к заданию
+    // данный класс должен иметь метод Length, то с математической точки зрения это отрезок?
+    // подрузомевается, что насчитывается дленна отрезка?
+    [[nodiscard]] double Length() const noexcept { return (end - start).Length(); }
+
+    [[nodiscard]] Point2D Direction() const noexcept { return end - start; }
+
+    [[nodiscard]] BoundingBox BoundBox() const noexcept {
+        BoundingBox bb;
+        bb.min_x = std::min(start.x, end.y);
+        bb.min_y = std::min(start.y, end.y);
+        bb.max_x = std::max(start.x, end.x);
+        bb.max_y = std::max(start.y, end.y);
+        return bb;
+    }
+
+    // нужно уточнить у ревьювер значение метода Height,
+    // пока предположим, что это высота её BoundBox
+    // высота отрезка, всегда совподает с высотой охватываюшего его BoundingBox-а
+    [[nodiscard]] double Height() const noexcept { return BoundBox().Height(); }
+
+    [[nodiscard]] Point2D Center() const noexcept { return {(start.x + end.x) / 2.0, (start.y + end.y) / 2.0}; }
+
+    [[nodiscard]] std::array<Point2D, 2u> Vertices() const noexcept { return std::array{start, end}; }
+
+    [[nodiscard]] Lines2D<2> Lines() const noexcept {
+        Lines2D<2> res;
+        res.x = {start.x, end.x};
+        res.y = {start.y, end.y};
+        return res;
+    }
 };
 
 struct Triangle {
     Point2D a, b, c;
 
     /* ваш код здесь */
+    [[nodiscard]] double Area() const noexcept {
+        auto ab = b - a;
+        auto ac = c - a;
+        // 1\2 длинны векторного произведения
+        // так же как и с координатами, но блогадаря перегрузкам
+        // не нужно работать с координатами на прямую
+        return 0.5 * ab.Cross(ac);
+    }
+    /*
+               b(1)
+             /   \
+            /     \
+           /       \
+      a(0)/_________\ c(2)
+    */
+    [[nodiscard]] double Height(size_t vertex) const {
+        // vertex = 0, 1, 2
+        // добавить исключение, если vertex > 2
+        // обход треугольника cw (по часовой стрелке)
+        const std::array<Point2D, 3> points = {a, b, c};
+        return (2 * Area()) / (points[(vertex + 2) % 3] - points[(vertex + 1) % 3]).Length();
+    }
+
+    [[nodiscard]] Point2D Center() const noexcept { return (a + b + c) / 3.0; }
+
+    [[nodiscard]] BoundingBox BoundBox() const noexcept {
+        BoundingBox bb;
+        bb.min_x = std::min(a.x, std::min(b.x, c.y));
+        bb.min_y = std::min(a.y, std::min(b.y, c.y));
+        bb.max_x = std::max(a.x, std::max(b.x, c.x));
+        bb.max_y = std::max(a.y, std::max(b.y, c.y));
+        return bb;
+    }
+
+    [[nodiscard]] std::array<Point2D, 3u> Vertices() const noexcept { return std::array{a, b, c}; }
+
+    [[nodiscard]] Lines2D<4> Lines() const noexcept {
+        Lines2D<4> res;
+        res.x = {a.x, b.x, c.x, a.x};
+        res.y = {a.y, b.y, c.y, a.y};
+        return res;
+    }
 };
 
 struct Rectangle {
@@ -100,6 +179,46 @@ struct Rectangle {
     double width, height;
 
     /* ваш код здесь */
+    [[nodiscard]] double Area() const noexcept { return height * width; }
+
+    [[nodiscard]] double Height() const noexcept { return height; }
+
+    [[nodiscard]] Point2D Center() const noexcept {
+        return {bottom_left.x + width / 2.0, bottom_left.y + height / 2.0};
+    }
+
+    [[nodiscard]] BoundingBox BoundBox() const noexcept {
+        BoundingBox bb;
+        bb.min_x = bottom_left.x;
+        bb.min_y = bottom_left.y;
+        bb.max_x = bottom_left.x + width;
+        bb.max_y = bottom_left.y + height;
+        return bb;
+    }
+
+    [[nodiscard]] std::array<Point2D, 4u> Vertices() const noexcept {
+        std::array<Point2D, 4u> points;
+        // Идем по часовой стрелке от левой нижней вершины
+        points[0] = bottom_left;
+        // левая верхняя вершина
+        points[1] = {bottom_left.x, bottom_left.y + height};
+        // правая верхняя вершина
+        points[2] = {bottom_left.x + width, bottom_left.y + height};
+        // правая нижняя вершина
+        points[3] = {bottom_left.x + width, bottom_left.y};
+        return points;
+    }
+
+    [[nodiscard]] Lines2D<5> Lines() const noexcept {
+        Lines2D<5> lines;
+        for (auto &&[index, vertex] : std::views::enumerate(Vertices())) {
+            lines.x[index] = vertex.x;
+            lines.y[index] = vertex.y;
+        }
+        lines.x.back() = lines.x.front();
+        lines.y.back() = lines.y.front();
+        return lines;
+    }
 };
 
 struct RegularPolygon {
@@ -110,7 +229,28 @@ struct RegularPolygon {
     constexpr RegularPolygon(Point2D center, double radius, int sides)
         : center_p(center), radius(radius), sides(sides) {}
 
-    std::vector<Point2D> Vertices() {
+    [[nodiscard]] double Height() const noexcept {
+        // В случаи вписанной окружности h правельного многоугольника равна r - вписанной окружности
+        return center_p.y + radius;  // по аналогии с Circle из прекода
+    }
+
+    [[nodiscard]] Point2D Center() const noexcept { return center_p; }
+
+    [[nodiscard]] BoundingBox BoundBox() const noexcept {
+        BoundingBox bb;
+        const auto vertices = Vertices();
+        // vertices - если пустой контейнер нужно выбросить исключение, а функция не noexcept
+        // TODO: подумать как переписать через ranges, проблемы с const
+        const auto maxPoint = *std::max_element(vertices.begin(), vertices.end());
+        const auto minPoint = *std::min_element(vertices.begin(), vertices.end());
+        bb.min_x = minPoint.x;
+        bb.min_y = minPoint.y;
+        bb.max_x = maxPoint.x;
+        bb.max_y = maxPoint.y;
+        return bb;
+    }
+
+    [[nodiscard]] std::vector<Point2D> Vertices() const noexcept {
         std::vector<Point2D> points;
         points.reserve(sides);
 
@@ -120,6 +260,19 @@ struct RegularPolygon {
         }
         return points;
     }
+
+    [[nodiscard]] Lines2DDyn Lines() const noexcept {
+        Lines2DDyn lines;
+        lines.Reserve(sides + 1);
+        for (const auto &vertex : Vertices()) {
+            lines.x.push_back(vertex.x);
+            lines.y.push_back(vertex.y);
+        }
+
+        lines.x.push_back(lines.Front().x);
+        lines.y.push_back(lines.Front().y);
+        return lines;
+    }
 };
 
 struct Circle {
@@ -128,7 +281,7 @@ struct Circle {
 
     constexpr Circle(Point2D center, double radius) : center_p(center), radius(radius) {}
 
-    BoundingBox BoundBox() {
+    [[nodiscard]] BoundingBox BoundBox() const noexcept {
         return {center_p.x - radius, center_p.y - radius, center_p.x + radius, center_p.y + radius};
     }
     double Height() { return center_p.y + radius; }
@@ -137,13 +290,121 @@ struct Circle {
     //
     // Должны быть сделана по аналогии с RegularPolygon::Vertices
     //
-    std::vector<Point2D> Vertices(size_t N = 30) { return {}; }
-    Lines2DDyn Lines(size_t N = 100) { return {}; }
+    std::vector<Point2D> Vertices(size_t N = 30) const {
+        // сделать exception если N < 3 (минимальное число, для описания окружности)
+        std::vector<Point2D> points;
+        points.reserve(N);
+        const double angleStep = (2 * M_PI) / N;
+        for (size_t i = 0; i < N; ++i) {
+            const double angele = i * angleStep;
+            points.emplace_back(center_p.x + radius * cos(angele), center_p.y + radius * sin(angele));
+        }
+        return points;
+    }
+
+    Lines2DDyn Lines(size_t N = 100) const {
+        Lines2DDyn lines;
+        lines.Reserve(N + 1);
+        for (const auto &vertex : Vertices(N)) {
+            lines.x.push_back(vertex.x);
+            lines.y.push_back(vertex.y);
+        }
+        const auto p = lines.Front();
+        lines.x.push_back(p.x);
+        lines.y.push_back(p.y);
+        return lines;
+    }
+};
+
+// произврльное хранилише для точек разных объектов, чтобы единообразно
+// передать их в  алгоритм построения выпуклой оболочки или треангуляции
+template <typename T>
+concept Container = requires(T container) {
+    // Проверяем, что можно получить итераторы
+    { container.begin() } -> std::same_as<decltype(container.end())>;
+    // Проверяем, что можно получить размер
+    { container.size() } -> std::convertible_to<std::size_t>;
+    // Проверяем, что можно получить элемент по итератору
+    { *container.begin() };
 };
 
 class Polygon {
 public:
     /* ваш код здесь */
+    Polygon() = default;
+
+    void Clear() noexcept {
+        points_.clear();
+        bounding_box_.min_x = bounding_box_.min_y = bounding_box_.max_x = bounding_box_.max_y = 0.0;
+    }
+
+    template <Container ContainerType>
+    void PushBack(const ContainerType &&points) {
+        points_.reserve(points_.size() + points.size());
+        std::ranges::copy(points, std::back_inserter(points_));
+        CalcBoudingBox();
+    }
+
+    [[nodiscard]] Point2D Center() const {
+        const size_t N = points_.size();
+        // формула центройда
+        Point2D center{0.0, 0.0};
+        double area = 0.0;
+        for (size_t i = 0; i < points_.size(); i++) {
+            const size_t j = (i + 1) % N;
+            const auto &iPoint = points_[i];
+            const auto &jPoint = points_[j];
+            const double cross = iPoint.Cross(jPoint);
+            area += cross;
+            center = center + (iPoint + jPoint) * cross;
+        }
+
+        area *= 0.5;
+        center = center / (6 * area);
+        return center;
+    }
+
+    [[nodiscard]] double Height() const {
+        const Point2D center = Center();
+        const size_t N = points_.size();
+
+        // R - радиус описанной окружности
+        const double R = center.DistanceTo(points_.front());
+        // r -  Радиус вписанной окружности
+        const double r = R * cos(M_PI / N);
+        return 2 * r;
+    }
+
+    [[nodiscard]] BoundingBox BoundBox() const noexcept { return bounding_box_; }
+
+    [[nodiscard]] const std::vector<Point2D> &Vertices() const noexcept { return points_; }
+
+    [[nodiscard]] Lines2DDyn Lines() const {
+        Lines2DDyn lines;
+        lines.Reserve(points_.size() + 1);
+        for (const auto &vertex : Vertices()) {
+            lines.x.push_back(vertex.x);
+            lines.y.push_back(vertex.y);
+        }
+        const auto p = lines.Front();
+        lines.x.push_back(p.x);
+        lines.y.push_back(p.y);
+        return lines;
+    }
+
+private:
+    void CalcBoudingBox() noexcept {
+        bounding_box_.min_x = std::numeric_limits<double>::max();
+        bounding_box_.min_y = std::numeric_limits<double>::max();
+        bounding_box_.max_x = std::numeric_limits<double>::min();
+        bounding_box_.max_y = std::numeric_limits<double>::min();
+        for (const auto &point : points_) {
+            bounding_box_.min_x = std::min(bounding_box_.min_x, point.x);
+            bounding_box_.min_y = std::min(bounding_box_.min_y, point.y);
+            bounding_box_.max_x = std::max(bounding_box_.max_x, point.x);
+            bounding_box_.max_y = std::max(bounding_box_.max_y, point.y);
+        }
+    }
 
 private:
     std::vector<Point2D> points_;
@@ -151,6 +412,13 @@ private:
 };
 
 using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Polygon>;
+
+/*
+ * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
+ */
+struct DummyClass {
+    DummyClass(std::vector<Shape>) {}
+};
 
 enum class GeometryError { Unsupported, NoIntersection, InvalidInput, DegenrateCase, InsufficientPoints };
 
