@@ -1,15 +1,18 @@
 #pragma once
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <expected>
 #include <format>
+#include <iostream>
 #include <limits>
 #include <numbers>
 #include <optional>
 #include <print>
 #include <ranges>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -432,7 +435,7 @@ struct std::formatter<geometry::Point2D> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Point2D &p, FormatContext &ctx) {
+    auto format(const geometry::Point2D &p, FormatContext &ctx) const {
         return format_to(ctx.out(), "({:.2f}, {:.2f})", p.x, p.y);
     }
 };
@@ -441,15 +444,24 @@ struct std::formatter<std::vector<geometry::Point2D>> {
     bool use_new_line = false;
 
     constexpr auto parse(std::format_parse_context &ctx) {
-        auto it = ctx.begin();
-
         /* ваш код здесь */
+        // Создаем string_view напрямую из строки
+        const std::string_view substr(ctx);
 
-        return it;
+        // приходит строка вида: new_line}
+        // Находим позицию символа '}'
+        const size_t brace_pos = substr.find('}');
+        if (brace_pos != std::string::npos && substr.substr(0, brace_pos) == "new_line")
+            use_new_line = true;
+
+        return ctx.begin() + brace_pos;
     }
 
     template <typename FormatContext>
-    auto format(const std::vector<geometry::Point2D> &v, FormatContext &ctx) {
+    auto format(const std::vector<geometry::Point2D> &v, FormatContext &ctx) const {
+        for (const auto &p : v) {
+            use_new_line ? std::format_to(ctx.out(), "{}\n\t", p) : std::format_to(ctx.out(), "{} ", p);
+        }
 
         /* ваш код здесь */
         return ctx.out();
@@ -461,7 +473,7 @@ struct std::formatter<geometry::Line> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Line &l, FormatContext &ctx) {
+    auto format(const geometry::Line &l, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "Line({}, {})", l.start, l.end);
     }
 };
@@ -471,7 +483,7 @@ struct std::formatter<geometry::Circle> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Circle &c, FormatContext &ctx) {
+    auto format(const geometry::Circle &c, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "Circle(center={}, r={:.2f})", c.center_p, c.radius);
     }
 };
@@ -481,7 +493,7 @@ struct std::formatter<geometry::Rectangle> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Rectangle &r, FormatContext &ctx) {
+    auto format(const geometry::Rectangle &r, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "Rectangle(bottom_left={}, w={:.2f}, h={:.2f})", r.bottom_left, r.width,
                               r.height);
     }
@@ -492,7 +504,7 @@ struct std::formatter<geometry::RegularPolygon> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::RegularPolygon &p, FormatContext &ctx) {
+    auto format(const geometry::RegularPolygon &p, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "RegularPolygon(center={}, r={:.2f}, sides={})", p.center_p, p.radius,
                               p.sides);
     }
@@ -502,7 +514,7 @@ struct std::formatter<geometry::Triangle> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Triangle &t, FormatContext &ctx) {
+    auto format(const geometry::Triangle &t, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "Triangle({}, {}, {})", t.a, t.b, t.c);
     }
 };
@@ -511,7 +523,7 @@ struct std::formatter<geometry::Polygon> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Polygon &poly, FormatContext &ctx) {
+    auto format(const geometry::Polygon &poly, FormatContext &ctx) const {
         auto out = ctx.out();
         out = std::format_to(out, "Polygon[{} points]: [", poly.Vertices().size());
 
