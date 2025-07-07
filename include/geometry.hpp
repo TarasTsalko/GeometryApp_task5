@@ -41,7 +41,7 @@ struct Point2D {
     [[nodiscard]] Point2D operator/(double value) const { return {x / value, y / value}; }
 
     // Binary geometry operations
-    double Dot(const Point2D &other) { return x * other.x + y * other.y; }
+    [[nodiscard]] double Dot(const Point2D &other) const noexcept { return x * other.x + y * other.y; }
     [[nodiscard]] double Cross(const Point2D &other) const noexcept { return x * other.y - y * other.x; }
     [[nodiscard]] double Length() const noexcept { return std::sqrt(x * x + y * y); }
     [[nodiscard]] double DistanceTo(const Point2D &other) const noexcept { return (*this - other).Length(); }
