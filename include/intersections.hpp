@@ -107,7 +107,7 @@ public:
     }
 
     std::vector<Point2D> operator()(const auto &shape1, const auto &shape2) const {
-        throw std::logic_error("Unexpected shapes for intersection operatoin");
+        throw std::logic_error("Unexpected shapes for intersection operation");
         return {};
     }
 
