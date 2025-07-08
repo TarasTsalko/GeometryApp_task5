@@ -2,6 +2,7 @@
 #include "geometry.hpp"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <variant>
@@ -214,6 +215,15 @@ private:
 };
 
 /*
+ * Функции-помощники
+ */
+inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
+
+    /* ваш код здесь */
+    return std::visit(PointToShapeDistanceVisitor{point}, shape);
+}
+
+/*
  * Класс для поиска расстояния между двумя фигурами
  *
  * Требуется организовать возможность нахождения расстояния только для следующих комбинаций фигур:
@@ -226,16 +236,84 @@ private:
 struct ShapeToShapeDistanceVisitor {
 
     /* ваш код здесь */
+    double operator()(const Shape &shape, const Point2D &point) const { return DistanceToPoint(shape, point); }
+
+    double operator()(const Line &line1, const Line &line2) const {
+        // Спросить у ревьювера
+        // Пришлось добавить CheckIntersection, так как код
+        // из PointToShapeDistanceVisitor высчитывает точки,
+        // или это не значительно и можно поверить, что точек пересечения нет и использовать одну функцию?
+        if (CheckIntersection(line1, line2))
+            return 0.0;
+
+        // DRY
+        const double d1 = DistanceToPoint(line2, line1.start);
+        const double d2 = DistanceToPoint(line2, line1.end);
+        const double d3 = DistanceToPoint(line1, line2.start);
+        const double d4 = DistanceToPoint(line1, line2.end);
+        return std::min({d1, d2, d3, d4});
+    }
+
+    double operator()(const Circle &circle1, const Circle &circle2) const {
+        const double dist = (circle2.center_p - circle1.center_p).Length();
+        if (dist <= fabs(circle1.radius - circle2.radius)) {
+            // Одна окружность внутри другой
+            return -(std::abs(circle1.radius - circle2.radius) - dist);  // отрицательное значение
+        } else if (dist < circle1.radius + circle2.radius) {
+            // Окружности пересекаются
+            return 0.0;
+        }
+
+        // Окружности не пересекаются
+        return dist - (circle1.radius + circle2.radius);
+    }
+
+    double operator()(const auto &shape1, const auto &shape2) const {
+        throw std::logic_error("Unexpected shapes for calc distante betwenn shapes operation");
+        return 0.0;
+    }
+
+private:
+    // Функция для проверки, пересекаются ли два отрезка
+    bool CheckIntersection(const Line &line1, const Line &line2) const {
+        const double eps = 1e-9;
+
+        const Point2D A = line1.start, B = line1.end;
+        const Point2D C = line2.start, D = line2.end;
+        const Point2D AB = B - A;
+        const Point2D CD = D - C;
+        const double cross = AB.Cross(CD);
+        const Point2D AC = C - A;
+        // Непараллельные отрезки
+        if (fabs(cross) > eps) {
+            double t = AC.Cross(CD) / cross;
+            double u = AC.Cross(AB) / cross;
+            if (t >= -eps && t <= 1 + eps && u >= -eps && u <= 1 + eps)
+                return true;
+            return false;
+        }
+
+        // Параллельные отрезки
+        double ACxAB = AC.Cross(AB);
+        if (fabs(ACxAB) > eps)
+            return false;
+
+        // Проверка перекрытия
+        const auto [s1_min_x, s1_max_x] = std::minmax(A.x, B.x);
+        const auto [s2_min_x, s2_max_x] = std::minmax(C.x, D.x);
+
+        if (s1_max_x < s2_min_x - eps || s2_max_x < s1_min_x - eps)
+            return false;
+
+        const auto [s1_min_y, s1_max_y] = std::minmax(A.y, B.y);
+        const auto [s2_min_y, s2_max_y] = std::minmax(C.y, D.y);
+
+        if (s1_max_y < s2_min_y - eps || s2_max_y < s1_min_y - eps)
+            return false;  // Нет наложения
+
+        return true;
+    }
 };
-
-/*
- * Функции-помощники
- */
-inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
-
-    /* ваш код здесь */
-    return std::visit(PointToShapeDistanceVisitor{point}, shape);
-}
 
 inline BoundingBox GetBoundBox(const Shape &shape) {
 
@@ -258,7 +336,12 @@ inline bool BoundingBoxesOverlap(const Shape &shape1, const Shape &shape2) {
 std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) {
 
     /* ваш код с ShapeToShapeDistanceVisitor здесь*/
-    return std::nullopt;
+    try {
+        return std::visit(ShapeToShapeDistanceVisitor{}, shape1, shape2);
+    } catch (const std::logic_error &e) {
+        std::cerr << e.what() << std::endl;
+        return std::nullopt;
+    }
 }
 
 }  // namespace geometry::queries
