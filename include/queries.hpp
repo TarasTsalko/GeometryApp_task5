@@ -318,22 +318,51 @@ private:
 inline BoundingBox GetBoundBox(const Shape &shape) {
 
     /* ваш код здесь */
-    return {};
+    Multilambda multilambda{[](const Line &line) { return line.BoundBox(); },
+                            [](const Triangle &triangle) { return triangle.BoundBox(); },
+                            [](const Rectangle &rectangle) { return rectangle.BoundBox(); },
+                            [](const Circle &circle) { return circle.BoundBox(); },
+                            [](const RegularPolygon &poly) { return poly.BoundBox(); },
+                            [](const Polygon &poly) { return poly.BoundBox(); },
+                            [](const Shape &shape) {
+                                // так как метод BoundBox должен быть реализован у всех объектов,
+                                // то данный код должен быть недостежим, то вызываем std::unreachable();
+                                std::unreachable();
+                                return BoundingBox{};
+                            }};
+    return std::visit(multilambda, shape);
 }
 
 inline double GetHeight(const Shape &shape) {
 
     /* ваш код здесь */
-    return 0.0;
+    Multilambda multilambda{[](const Line &line) { return line.Height(); },
+                            [](const Triangle &triangle) {
+                                // так как в задании не уточняется к какой из сторон,
+                                // но есть пункт где нужно найти самую высокую фигуру,
+                                // то вернем максимальную из трех (уточнить у ревьювера)
+                                return std::max({triangle.Height(0), triangle.Height(1), triangle.Height(2)});
+                            },
+                            [](const Rectangle &rectangle) { return rectangle.Height(); },
+                            [](const Circle &circle) { return circle.Height(); },
+                            [](const RegularPolygon &poly) { return poly.Height(); },
+                            [](const Polygon &poly) { return poly.Height(); },
+                            [](const Shape &shape) {
+                                // так как метод Height должен быть реализован у всех объектов,
+                                // то данный код должен быть недостежим, то вызываем std::unreachable();
+                                std::unreachable();
+                                return BoundingBox{};
+                            }};
+    return std::visit(multilambda, shape);
 }
 
 inline bool BoundingBoxesOverlap(const Shape &shape1, const Shape &shape2) {
 
     /* ваш код здесь */
-    return false;
+    return GetBoundBox(shape1).Overlaps(GetBoundBox(shape2));
 }
 
-std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) {
+inline std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) {
 
     /* ваш код с ShapeToShapeDistanceVisitor здесь*/
     try {
