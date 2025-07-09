@@ -30,7 +30,7 @@ struct Point2D {
 
     // Comparison
     bool operator<(const Point2D &other) const noexcept { return x < other.x && y < other.y; }
-    bool operator==(const Point2D &other) { return x == other.x && y == other.y; }
+    bool operator==(const Point2D &other) const noexcept { return x == other.x && y == other.y; }
 
     // Binary math operators
     [[nodiscard]] Point2D operator+(const Point2D &other) const noexcept { return {x + other.x, y + other.y}; }
@@ -83,7 +83,7 @@ struct BoundingBox {
     /* ваш код здесь */
     [[nodiscard]] double Width() const noexcept { return max_x - min_x; }
 
-    [[nodiscard]] double Height() const noexcept { return max_y - min_x; }
+    [[nodiscard]] double Height() const noexcept { return max_y - min_y; }
 
     [[nodiscard]] Point2D Center() const noexcept { return {(min_x + max_x) / 2.0, (min_y + max_x) / 2.0}; }
 
@@ -287,8 +287,8 @@ struct Circle {
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         return {center_p.x - radius, center_p.y - radius, center_p.x + radius, center_p.y + radius};
     }
-    double Height() { return center_p.y + radius; }
-    Point2D Center() { return center_p; }
+    double Height() const noexcept { return center_p.y + radius; }
+    Point2D Center() const noexcept { return center_p; }
 
     //
     // Должны быть сделана по аналогии с RegularPolygon::Vertices
@@ -342,7 +342,7 @@ public:
     }
 
     template <Container ContainerType>
-    void PushBack(const ContainerType &&points) {
+    void PushBack(const ContainerType &points) {
         points_.reserve(points_.size() + points.size());
         std::ranges::copy(points, std::back_inserter(points_));
         CalcBoudingBox();
