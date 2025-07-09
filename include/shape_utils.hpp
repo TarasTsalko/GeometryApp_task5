@@ -1,6 +1,10 @@
 #pragma once
 #include "geometry.hpp"
 #include "queries.hpp"
+#include <cassert>
+#include <cstddef>
+#include <limits>
+#include <optional>
 #include <print>
 #include <random>
 #include <ranges>
@@ -63,9 +67,22 @@ private:
     std::uniform_int_distribution<int> type_dist;
 };
 
-std::vector<std::pair<Shape, Shape>> FindAllCollisions(DummyClass shapes) {
+inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(const std::vector<Shape> shapes) {
     std::vector<std::pair<Shape, Shape>> collisions;
+    using namespace queries;
+    const size_t nShape = shapes.size();
+    collisions.reserve(nShape * nShape);
 
+    std::ranges::for_each(std::views::cartesian_product(shapes, shapes) | std::views::filter([](const auto &pair) {
+                              const auto &shape1 = std::get<0>(pair);
+                              const auto &shape2 = std::get<1>(pair);
+                              return std::addressof(shape1) < std::addressof(shape2);
+                          }) | std::views::filter([](const auto &pair) {
+                              const auto &shape1 = std::get<0>(pair);
+                              const auto &shape2 = std::get<1>(pair);
+                              return BoundingBoxesOverlap(shape1, shape2);
+                          }),
+                          [&](const auto &pair) { collisions.emplace_back(std::get<0>(pair), std::get<1>(pair)); });
     /*
      * Используйте библиотеку ranges, чтобы найти все коллизии между фигурами
      *
@@ -77,14 +94,29 @@ std::vector<std::pair<Shape, Shape>> FindAllCollisions(DummyClass shapes) {
     return collisions;
 }
 
-std::optional<size_t> FindHighestShape(DummyClass shapes) {
+// нужно уточнить реализацию метода Height у разных тел
+// задал вопрос Наставнику, пока внесу реализацию FindHighestShape,
+// так ка это не повлияет на реализацию GetHeight
+std::optional<size_t> FindHighestShape(const std::vector<Shape> shapes) {
 
-    /*
-     * Используйте библиотеку ranges, чтобы найти самую высокую фигуру
-     *
-     * Важно: использование ручной итерации по фигурам не разрешается
-     */
+    using namespace queries;
+    if (shapes.empty())
+        return std::nullopt;
 
+    // Получаем преобразованный диапазон
+    auto transformedRange = shapes | std::views::enumerate | std::views::transform([](const auto &pair) {
+                                const auto &[idx, shape] = pair;
+                                return std::tuple{GetHeight(shape), idx};
+                            });
+
+    // Находим максимальный элемент в преобразованном диапазоне
+    auto maxElement = std::ranges::max_element(
+        transformedRange, [](const auto &a, const auto &b) { return std::get<0>(a) < std::get<0>(b); });
+
+    // Проверяем, найден ли элемент
+    if (maxElement != std::ranges::end(transformedRange)) {
+        return std::get<1>(*maxElement);
+    }
     return std::nullopt;
 }
 
