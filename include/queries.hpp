@@ -337,12 +337,7 @@ inline double GetHeight(const Shape &shape) {
 
     /* ваш код здесь */
     Multilambda multilambda{[](const Line &line) { return line.Height(); },
-                            [](const Triangle &triangle) {
-                                // так как в задании не уточняется к какой из сторон,
-                                // но есть пункт где нужно найти самую высокую фигуру,
-                                // то вернем максимальную из трех (уточнить у ревьювера)
-                                return std::max({triangle.Height(0), triangle.Height(1), triangle.Height(2)});
-                            },
+                            [](const Triangle &triangle) { return triangle.Height(); },
                             [](const Rectangle &rectangle) { return rectangle.Height(); },
                             [](const Circle &circle) { return circle.Height(); },
                             [](const RegularPolygon &poly) { return poly.Height(); },

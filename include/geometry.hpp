@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstddef>
 #include <expected>
+#include <flat_map>
 #include <format>
 #include <iostream>
 #include <limits>
@@ -12,7 +13,10 @@
 #include <optional>
 #include <print>
 #include <ranges>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -85,11 +89,11 @@ struct BoundingBox {
 
     [[nodiscard]] double Height() const noexcept { return max_y - min_y; }
 
-    [[nodiscard]] Point2D Center() const noexcept { return {(min_x + max_x) / 2.0, (min_y + max_x) / 2.0}; }
+    [[nodiscard]] Point2D Center() const noexcept { return {(min_x + max_x) / 2.0, (min_y + max_y) / 2.0}; }
 
     [[nodiscard]] bool Overlaps(const BoundingBox &box) const noexcept {
         return !(max_x < box.min_x || min_x > box.max_x || max_y < box.min_y || min_y > box.max_y);
-    }
+    };
 };
 
 struct Line {
@@ -105,7 +109,7 @@ struct Line {
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         BoundingBox bb;
-        bb.min_x = std::min(start.x, end.y);
+        bb.min_x = std::min(start.x, end.x);
         bb.min_y = std::min(start.y, end.y);
         bb.max_x = std::max(start.x, end.x);
         bb.max_y = std::max(start.y, end.y);
@@ -115,7 +119,11 @@ struct Line {
     // нужно уточнить у ревьювер значение метода Height,
     // пока предположим, что это высота её BoundBox
     // высота отрезка, всегда совподает с высотой охватываюшего его BoundingBox-а
-    [[nodiscard]] double Height() const noexcept { return BoundBox().Height(); }
+
+    // Уточнил у наставника, в п7. задания нужно найти фигуру выше всего расположенную
+    // на графике, а не наивысщую, соответственно метод Height должен возвращать максимальное
+    // значение (с ечетом знака) y-координату
+    [[nodiscard]] double Height() const noexcept { return std::max(start.y, end.y); }
 
     [[nodiscard]] Point2D Center() const noexcept { return {(start.x + end.x) / 2.0, (start.y + end.y) / 2.0}; }
 
@@ -141,29 +149,20 @@ struct Triangle {
         // не нужно работать с координатами на прямую
         return 0.5 * ab.Cross(ac);
     }
-    /*
-               b(1)
-             /   \
-            /     \
-           /       \
-      a(0)/_________\ c(2)
-    */
-    [[nodiscard]] double Height(size_t vertex) const {
-        // vertex = 0, 1, 2
-        // добавить исключение, если vertex > 2
-        // обход треугольника cw (по часовой стрелке)
-        const std::array<Point2D, 3> points = {a, b, c};
-        return (2 * Area()) / (points[(vertex + 2) % 3] - points[(vertex + 1) % 3]).Length();
-    }
+
+    // Уточнил у наставника, в п7. задания нужно найти фигуру выше всего расположенную
+    // на графике, а не наивысщую, соответственно метод Height должен возвращать максимальное
+    // значение (с ечетом знака) y-координату
+    [[nodiscard]] double Height() const { return std::max({a.y, b.y, c.y}); }
 
     [[nodiscard]] Point2D Center() const noexcept { return (a + b + c) / 3.0; }
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         BoundingBox bb;
-        bb.min_x = std::min(a.x, std::min(b.x, c.y));
-        bb.min_y = std::min(a.y, std::min(b.y, c.y));
-        bb.max_x = std::max(a.x, std::max(b.x, c.x));
-        bb.max_y = std::max(a.y, std::max(b.y, c.y));
+        bb.min_x = std::min({a.x, b.x, c.x});
+        bb.min_y = std::min({a.y, b.y, c.y});
+        bb.max_x = std::max({a.x, b.x, c.x});
+        bb.max_y = std::max({a.y, b.y, c.y});
         return bb;
     }
 
@@ -184,7 +183,7 @@ struct Rectangle {
     /* ваш код здесь */
     [[nodiscard]] double Area() const noexcept { return height * width; }
 
-    [[nodiscard]] double Height() const noexcept { return height; }
+    [[nodiscard]] double Height() const noexcept { return bottom_left.y + height; }
 
     [[nodiscard]] Point2D Center() const noexcept {
         return {bottom_left.x + width / 2.0, bottom_left.y + height / 2.0};
@@ -241,15 +240,17 @@ struct RegularPolygon {
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         BoundingBox bb;
+        bb.max_x = std::numeric_limits<double>::lowest();
+        bb.max_y = std::numeric_limits<double>::lowest();
+        bb.min_x = std::numeric_limits<double>::max();
+        bb.min_y = std::numeric_limits<double>::max();
         const auto vertices = Vertices();
-        // vertices - если пустой контейнер нужно выбросить исключение, а функция не noexcept
-        // TODO: подумать как переписать через ranges, проблемы с const
-        const auto maxPoint = *std::max_element(vertices.begin(), vertices.end());
-        const auto minPoint = *std::min_element(vertices.begin(), vertices.end());
-        bb.min_x = minPoint.x;
-        bb.min_y = minPoint.y;
-        bb.max_x = maxPoint.x;
-        bb.max_y = maxPoint.y;
+        for (const auto &point : vertices) {
+            bb.max_x = std::max(point.x, bb.max_x);
+            bb.min_x = std::min(point.x, bb.min_x);
+            bb.max_y = std::max(point.y, bb.max_y);
+            bb.min_y = std::min(point.y, bb.min_y);
+        }
         return bb;
     }
 
@@ -297,7 +298,7 @@ struct Circle {
         // сделать exception если N < 3 (минимальное число, для описания окружности)
         std::vector<Point2D> points;
         points.reserve(N);
-        const double angleStep = (2 * M_PI) / N;
+        const double angleStep = (2 * std::numbers::pi) / N;
         for (size_t i = 0; i < N; ++i) {
             const double angele = i * angleStep;
             points.emplace_back(center_p.x + radius * cos(angele), center_p.y + radius * sin(angele));
@@ -334,7 +335,12 @@ concept Container = requires(T container) {
 class Polygon {
 public:
     /* ваш код здесь */
-    Polygon() = default;
+    template <Container ContainerType>
+    Polygon(const ContainerType &points) {
+        points_.reserve(points_.size() + points.size());
+        std::ranges::copy(points, std::back_inserter(points_));
+        CalcBoudingBox();
+    }
 
     void Clear() noexcept {
         points_.clear();
@@ -367,15 +373,12 @@ public:
         return center;
     }
 
+    // Уточнил у наставника, в п7. задания нужно найти фигуру выше всего расположенную
+    // на графике, а не наивысщую, соответственно метод Height должен возвращать максимальное
+    // значение (с ечетом знака) y-координату
     [[nodiscard]] double Height() const {
-        const Point2D center = Center();
-        const size_t N = points_.size();
-
-        // R - радиус описанной окружности
-        const double R = center.DistanceTo(points_.front());
-        // r -  Радиус вписанной окружности
-        const double r = R * cos(M_PI / N);
-        return 2 * r;
+        CheckPoints();
+        return std::ranges::max(points_ | std::views::transform([](const Point2D &p) { return p.y; }));
     }
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept { return bounding_box_; }
@@ -396,6 +399,11 @@ public:
     }
 
 private:
+    void CheckPoints() const {
+        if (points_.empty())
+            throw std::runtime_error("Error: There are no points in polygin");
+    }
+
     void CalcBoudingBox() noexcept {
         bounding_box_.min_x = std::numeric_limits<double>::max();
         bounding_box_.min_y = std::numeric_limits<double>::max();
@@ -424,6 +432,22 @@ struct DummyClass {
 };
 
 enum class GeometryError { Unsupported, NoIntersection, InvalidInput, DegenrateCase, InsufficientPoints };
+
+inline std::string ConvertGeometryError(const GeometryError &geometryError) {
+    auto comparator = [](const GeometryError &lhv, const GeometryError &rhv) {
+        return std::to_underlying(lhv) < std::to_underlying(rhv);
+    };
+    const std::flat_map<GeometryError, std::string, decltype(comparator)> fromEnumToString = {
+        {GeometryError::Unsupported, "Unsuported error"},
+        {GeometryError::NoIntersection, "NoIntersection"},
+        {GeometryError::InvalidInput, "InvalidInput"},
+        {GeometryError::DegenrateCase, "DegenrateCase"},
+        {GeometryError::InsufficientPoints, "InsufficientPoints"}};
+
+    const auto it = fromEnumToString.find(geometryError);
+    assert(it != fromEnumToString.end());
+    return it->second;
+}
 
 template <typename T>
 using GeometryResult = std::expected<T, GeometryError>;
