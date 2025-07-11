@@ -2,6 +2,7 @@
 #include "geometry.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <expected>
 #include <ranges>
 #include <stack>
 #include <vector>
@@ -22,6 +23,28 @@ public:
     [[nodiscard]] size_t Size() const noexcept { return hull.size(); };
 
     [[nodiscard]] bool Empty() const noexcept { return hull.empty(); }
+
+    // Метод для проверки и обработки точек в стеке
+    GeometryResult<bool> IsLeftTurnOrCollinear(const Point2D &point) {
+        if (hull.size() < 2)
+            return std::unexpected<GeometryError>(GeometryError::InsufficientPoints);
+
+        Point2D top = hull.top();
+        hull.pop();
+        Point2D nextToTop = hull.top();
+        const double cross = CrossProduct(point, top, nextToTop);
+        if (cross >= 0.0) {  // >= 0 для обработки коллинеарных точек
+            hull.push(top);
+            return true;
+        }
+        return false;
+    }
+
+    void RemoveDuplicateStartPoint(const Point2D &point) noexcept {
+        // Удаляем дублирующуюся начальную точку
+        if (hull.size() > 1 && hull.top() == point)
+            hull.pop();
+    }
 
 private:
     std::stack<Point2D> hull;
