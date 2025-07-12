@@ -3,11 +3,13 @@
 #include "queries.hpp"
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <print>
 #include <random>
 #include <ranges>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -67,7 +69,7 @@ private:
     std::uniform_int_distribution<int> type_dist;
 };
 
-inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(const std::vector<Shape> shapes) {
+inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(std::span<const Shape> shapes) {
     std::vector<std::pair<Shape, Shape>> collisions;
     using namespace queries;
     const size_t nShape = shapes.size();
@@ -83,6 +85,7 @@ inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(const std::vector<
                               return BoundingBoxesOverlap(shape1, shape2);
                           }),
                           [&](const auto &pair) { collisions.emplace_back(std::get<0>(pair), std::get<1>(pair)); });
+
     /*
      * Используйте библиотеку ranges, чтобы найти все коллизии между фигурами
      *
@@ -97,7 +100,7 @@ inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(const std::vector<
 // нужно уточнить реализацию метода Height у разных тел
 // задал вопрос Наставнику, пока внесу реализацию FindHighestShape,
 // так ка это не повлияет на реализацию GetHeight
-std::optional<size_t> FindHighestShape(const std::vector<Shape> shapes) {
+std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
 
     using namespace queries;
     if (shapes.empty())

@@ -168,6 +168,21 @@ struct PointToShapeDistanceVisitor {
         return minDistance;
     }
 
+    double operator()(const Circle &circle) const {
+        const Point2D dir = point - circle.Center();
+        // Получаем расстояние как длину вектора
+        const double d = dir.Length();
+
+        // Определяем итоговое расстояние
+        if (d > circle.radius) {
+            return d - circle.radius;  // Точка снаружи
+        } else if (d < circle.radius) {
+            return circle.radius - d;  // Точка внутри
+        } else {
+            return 0.0;  // Точка на окружности
+        }
+    }
+
     double operator()(const auto &shape1) const {
         throw std::logic_error("Unexpected shape for calc distante to point operation");
         return {};
@@ -190,7 +205,12 @@ private:
         if (lengthSquared < eps)
             return ap.Length();  // a и b совпадают
 
-        double t = std::max(0.0, std::min(1.0, ap.Dot(ab) / lengthSquared));
+        // Вычисляем параметр t для проекции
+        double t = ap.Dot(ab) / lengthSquared;
+        // Ограничиваем t диапазоном [0, 1]
+        t = std::max(0.0, std::min(1.0, t));
+
+        // Находим проекцию точки на прямую
         const Point2D projection = a + ab * t;
         const Point2D distVec = point - projection;
         return distVec.Length();
