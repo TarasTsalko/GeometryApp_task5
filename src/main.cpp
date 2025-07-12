@@ -175,38 +175,18 @@ void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
      */
 }
 
-std::vector<Point2D> ColllectAllPoints(const std::vector<Shape> &shapes) {
+std::vector<Point2D> ColllectAllPoints(std::span<const Shape> shapes) {
 
     std::vector<Point2D> allPoints;
-    for (const auto &shape : shapes) {
-        std::visit(Multilambda{[&](const Line &line) {
-                                   const auto points = line.Vertices();
-                                   std::copy(points.begin(), points.end(), std::back_inserter(allPoints));
+    rng::for_each(shapes, [&allPoints](const auto &shape) {
+        std::visit(Multilambda{[&](const auto &s) -> void {
+                                   const auto points = s.Vertices();
+                                   allPoints.reserve(allPoints.size() + points.size());
+                                   rng::copy(points, std::back_inserter(allPoints));
                                },
-                               [&](const Triangle &tri) {
-                                   const auto points = tri.Vertices();
-                                   std::copy(points.begin(), points.end(), std::back_inserter(allPoints));
-                               },
-                               [&](const Rectangle &rect) {
-                                   const auto points = rect.Vertices();
-                                   std::copy(points.begin(), points.end(), std::back_inserter(allPoints));
-                               },
-                               [&](const RegularPolygon &poly) {
-                                   const auto points = poly.Vertices();
-                                   std::copy(points.begin(), points.end(), std::back_inserter(allPoints));
-                               },
-                               [&](const Circle &circle) {
-                                   const auto points = circle.Vertices();
-                                   std::copy(points.begin(), points.end(), std::back_inserter(allPoints));
-                               },
-                               [](const Shape &shape) {
-                                   // так как метод Height должен быть реализован у всех объектов,
-                                   // то данный код должен быть недостежим, то вызываем std::unreachable();
-                                   std::unreachable();
-                               }},
+                               [&](const Shape &) -> void { std::unreachable(); }},
                    shape);
-    }
-
+    });
     return allPoints;
 }
 
