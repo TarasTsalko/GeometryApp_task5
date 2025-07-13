@@ -80,7 +80,7 @@ GeometryResult<std::vector<Point2D>> GrahamScan(std::vector<Point2D> &points) {
     if (!res)
         return std::unexpected(res.error());
 
-    // Удаляем дублирующуюся начальную точку
+    // Удаляем дубль начальной точки
     hull.RemoveDuplicateStartPoint(points[0]);
 
     std::vector<Point2D> result;
