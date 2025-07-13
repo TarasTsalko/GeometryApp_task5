@@ -223,21 +223,20 @@ int main() {
     //
     std::vector<Point2D> points = ColllectAllPoints(shapes);
     const auto polygonPoints = geometry::convex_hull::GrahamScan(points);
-    if (!polygonPoints)
+    if (!polygonPoints) {
         std::println("GrahamScan error: {}", geometry::ConvertGeometryError(polygonPoints.error()));
+        return -1;
+    }
 
     geometry::Polygon poly(polygonPoints.value());
     shapes.push_back(poly);
     geometry::visualization::Draw(shapes);
-    /* ваш код здесь */
 
     //
     // Находим список точек, для построения выпуклой оболочки - convex hull - алгоритмом Грэхема
     // Создаём из них объект класса `Polygon` и добавляем его в список shapes
     // Рисуем все фигуры
     //
-
-    /* ваш код здесь */
 
     //
     // после изучения графика - нажмите Enter чтобы продолжить выполнение и построить 3ий график
@@ -246,6 +245,12 @@ int main() {
     {
         std::vector<Point2D> points = {{0, 0}, {10, 0}, {5, 8}, {15, 5}, {2, 12}};
 
+        const auto triangulation = geometry::triangulation::DelaunayTriangulation(points);
+        if (!triangulation) {
+            std::println("Triangulation error: {}", geometry::ConvertGeometryError(triangulation.error()));
+            return -2;
+        }
+        geometry::visualization::Draw(triangulation.value());
         //
         // Используйте список точек points или свой, чтобы
         // выполнить алгоритм триангуляции Делоне алгоритмом Боуэра-Ватсона
