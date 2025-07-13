@@ -97,7 +97,9 @@ struct BoundingBox {
 
     // Улучшенная реализация оператора сравнения
     bool operator==(const BoundingBox &other) const noexcept {
-        return std::tie(min_x, min_y, max_x, max_y) == std::tie(other.min_x, other.min_y, other.max_x, other.max_y);
+        const double eps = 1e-10;
+        return std::abs(min_x - other.min_x) < eps && std::abs(min_y - other.min_y) < eps &&
+               std::abs(max_x - other.max_x) < eps && std::abs(max_y - other.max_y) < eps;
     }
 };
 

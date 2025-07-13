@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <iostream>
 
 #include "geometry.hpp"
 
@@ -46,6 +45,20 @@ TEST(RectangleMethods, RectangleMethods) {
     ASSERT_DOUBLE_EQ(rect.Area(), 18.0);
     const BoundingBox box{2.0, 1.0, 5.0, 7.0};
     ASSERT_EQ(rect.BoundBox(), box);
+}
+
+TEST(RegularPolygonMethods, RegularPolygonMethods) {
+    const Point2D center = {3.5, 7.0};
+    const RegularPolygon poly(center, 100.0, 3);
+    ASSERT_DOUBLE_EQ(poly.Height(), 107.0);
+    ASSERT_EQ(poly.Center(), center);
+    ASSERT_EQ(poly.sides, 3);
+    ASSERT_EQ(poly.radius, 100.0);
+    ASSERT_EQ(poly.Vertices().size(), 3);
+    ASSERT_EQ(poly.Lines().x.size(), 4);  // первая точка добовляется дважды, чтобы замкнуть
+    ASSERT_EQ(poly.Lines().y.size(), 4);  // первая точка добовляется дважды, чтобы замкнуть
+    const BoundingBox box{-46.500000000000043, -79.60254037844383, 103.5, 93.602540378443877};
+    ASSERT_EQ(box, poly.BoundBox());
 }
 
 }  // namespace geometry
