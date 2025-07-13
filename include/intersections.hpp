@@ -2,6 +2,7 @@
 #include "geometry.hpp"
 #include <cmath>
 #include <optional>
+#include <print>
 #include <variant>
 #include <vector>
 
@@ -55,8 +56,11 @@ public:
         if (s1_max_y < s2_min_y - eps || s2_max_y < s1_min_y - eps)
             return {};  // Нет наложения
 
-        Point2D intersection_start = {std::max(s1_min_x, s2_min_x), std::max(s1_min_y, s2_min_y)};
-        Point2D intersection_end = {std::min(s1_max_x, s2_max_x), std::min(s1_max_y, s2_max_y)};
+        const Point2D intersection_start = {std::max(s1_min_x, s2_min_x), std::max(s1_min_y, s2_min_y)};
+        const Point2D intersection_end = {std::min(s1_max_x, s2_max_x), std::min(s1_max_y, s2_max_y)};
+        // если отрезки имеют общую точку (в этом случаи intersection_start == intersection_end )
+        if ((intersection_end - intersection_start).Length() <= 1e-10)
+            return {intersection_start};
         return {intersection_start, intersection_end};
     }
 
