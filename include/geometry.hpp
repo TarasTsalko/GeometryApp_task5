@@ -94,6 +94,11 @@ struct BoundingBox {
     [[nodiscard]] bool Overlaps(const BoundingBox &box) const noexcept {
         return !(max_x < box.min_x || min_x > box.max_x || max_y < box.min_y || min_y > box.max_y);
     };
+
+    // Улучшенная реализация оператора сравнения
+    bool operator==(const BoundingBox &other) const noexcept {
+        return std::tie(min_x, min_y, max_x, max_y) == std::tie(other.min_x, other.min_y, other.max_x, other.max_y);
+    }
 };
 
 struct Line {
