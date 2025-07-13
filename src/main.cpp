@@ -251,6 +251,15 @@ int main() {
             return -2;
         }
         geometry::visualization::Draw(triangulation.value());
+        std::vector<Point2D> polygonPoints;
+        polygonPoints.reserve(triangulation.value().size() * 3);
+
+        for (const auto &triangle : triangulation.value()) {
+            const auto &vertices = triangle.Vertices();
+            std::ranges::copy(vertices, std::back_inserter(polygonPoints));
+        }
+
+        std::println("Точки треангуляции = {:new_line}", polygonPoints);
         //
         // Используйте список точек points или свой, чтобы
         // выполнить алгоритм триангуляции Делоне алгоритмом Боуэра-Ватсона
