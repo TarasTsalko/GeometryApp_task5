@@ -43,6 +43,11 @@ public:
         if (fabs(ACxAB) > eps)
             return {};
 
+        // Проверка полного совпадения отрезков
+        if ((A == C && B == D) || (A == D && B == C)) {
+            return {A, B};  // Возвращаем весь отрезок
+        }
+
         // Проверка перекрытия
         const auto [s1_min_x, s1_max_x] = std::minmax(A.x, B.x);
         const auto [s2_min_x, s2_max_x] = std::minmax(C.x, D.x);
@@ -73,12 +78,17 @@ public:
             return {};
 
         // одна окружность внутри другой
-        if (dist < fabs(circle1.radius - circle2.radius))
-            return {};
+        if (dist < fabs(circle1.radius - circle2.radius)) {
+            // возвращаем центр меньшей окружности
+            // уточнить у ревьювера, что предпочтительно возвращать в данной ситуации
+            return {circle1.radius > circle2.radius ? circle2.Center() : circle1.Center()};
+        }
         // если окружности совподают, то это можно трактовать
         // как частный случай пересечения и вернуть все точки
-        if (dist == 0.0 && circle1.radius == circle2.radius)
+        if (dist == 0.0 && circle1.radius == circle2.radius) {
+            // уточнить у ревьювера, что предпочтительно возвращать в данной ситуации
             return {circle1.Center()};  // Окружности совпадают (для удобства возвращаем центральную точку)
+        }
 
         // расстояния от центра первой окружности до точки, которая лежит на линии, соединяющей центры двух окружностей,
         // и которая делит это расстояние в соответствии с радиусами окружностей.
@@ -119,10 +129,31 @@ private:
     std::vector<Point2D> FindLineCircleIntersectionImpl(const geometry::Circle &circle,
                                                         const geometry::Line &line) const {
         const double eps = 1e-9;
+
         // Вектор направления отрезка
         const Point2D dir = line.end - line.start;
-        // Вектор от центра окружности до начала отрезка
+        // Векторы от центра окружности до концов отрезка
         const Point2D centerToStart = line.start - circle.center_p;
+        const Point2D centerToEnd = line.end - circle.center_p;
+
+        // Проверяем, находятся ли концы отрезка внутри окружности
+        bool startInside = centerToStart.Dot(centerToStart) < circle.radius * circle.radius + eps;
+        bool endInside = centerToEnd.Dot(centerToEnd) < circle.radius * circle.radius + eps;
+
+        // Если оба конца внутри, проверяем ближайшую точку
+        if (startInside && endInside) {
+            // Находим параметр t для ближайшей точки
+            double t = centerToStart.Dot(dir) / dir.Dot(dir);
+            t = std::max(0.0, std::min(1.0, t));
+
+            Point2D closestPoint = line.start + dir * t;
+            if ((closestPoint - circle.center_p).Dot(closestPoint - circle.center_p) <
+                circle.radius * circle.radius + eps) {
+                // Отрезок полностью внутри - возвращаем обе точки
+                // спросить у ревьювера? xnj kexit для единообразия
+                return {line.start, line.end};
+            }
+        }
 
         // Коэффициенты квадратного уравнения
         const double a = dir.Dot(dir);                // a = |d|^2
@@ -153,8 +184,6 @@ private:
 
         return points;
     }
-
-    /* ваш код здесь */
 };
 
 inline std::optional<std::vector<Point2D>> GetIntersectPoints(const Shape &shape1, const Shape &shape2) {
