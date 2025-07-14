@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <iterator>
 #include <print>
 #include <ranges>
@@ -194,82 +195,91 @@ std::vector<Point2D> ColllectAllPoints(std::span<const Shape> shapes) {
 }
 
 int main() {
-    utils::ShapeGenerator generator(-50.0, 50.0, 5.0, 25.0);
-    std::vector<Shape> shapes = generator.GenerateShapes(15);
+    try {
+        utils::ShapeGenerator generator(-50.0, 50.0, 5.0, 25.0);
+        std::vector<Shape> shapes = generator.GenerateShapes(15);
 
-    std::println("Generated {} random shapes", shapes.size());
+        std::println("Generated {} random shapes", shapes.size());
 
-    // Выведите индекс каждой фигуры и её высоту
-    PrintEachShapeHeight(shapes);
+        // Выведите индекс каждой фигуры и её высоту
+        PrintEachShapeHeight(shapes);
 
-    //
-    // Вызываем разработанные функции
-    //
+        //
+        // Вызываем разработанные функции
+        //
 
-    PrintAllIntersections(shapes[0], shapes);
+        PrintAllIntersections(shapes[0], shapes);
 
-    PrintDistancesFromPointToShapes(Point2D{10.0, 10.0}, shapes);
+        PrintDistancesFromPointToShapes(Point2D{10.0, 10.0}, shapes);
 
-    PerformShapeAnalysis(shapes);
+        PerformShapeAnalysis(shapes);
 
-    PerformExtraShapeAnalysis(shapes);
+        PerformExtraShapeAnalysis(shapes);
 
-    //
-    // Рисуем все фигуры
-    //
-    // Важно: после изучения графика - нажмите Enter чтобы продолжить выполнение и построить 2ой график
-    //
-    geometry::visualization::Draw(shapes);
+        //
+        // Рисуем все фигуры
+        //
+        // Важно: после изучения графика - нажмите Enter чтобы продолжить выполнение и построить 2ой график
+        //
+        geometry::visualization::Draw(shapes);
 
-    //
-    // Формируем список из вершин всех фигур
-    //
-    std::vector<Point2D> points = ColllectAllPoints(shapes);
-    const auto polygonPoints = geometry::convex_hull::GrahamScan(points);
-    if (!polygonPoints) {
-        std::println("GrahamScan error: {}", geometry::ConvertGeometryError(polygonPoints.error()));
+        //
+        // Формируем список из вершин всех фигур
+        //
+        std::vector<Point2D> points = ColllectAllPoints(shapes);
+        const auto polygonPoints = geometry::convex_hull::GrahamScan(points);
+        if (!polygonPoints) {
+            std::println("GrahamScan error: {}", geometry::ConvertGeometryError(polygonPoints.error()));
+            return -1;
+        }
+
+        geometry::Polygon poly(polygonPoints.value());
+        shapes.push_back(poly);
+        geometry::visualization::Draw(shapes);
+
+        //
+        // Находим список точек, для построения выпуклой оболочки - convex hull - алгоритмом Грэхема
+        // Создаём из них объект класса `Polygon` и добавляем его в список shapes
+        // Рисуем все фигуры
+        //
+
+        //
+        // после изучения графика - нажмите Enter чтобы продолжить выполнение и построить 3ий график
+        //
+
+        {
+            std::vector<Point2D> points = {{0, 0}, {10, 0}, {5, 8}, {15, 5}, {2, 12}};
+
+            const auto triangulation = geometry::triangulation::DelaunayTriangulation(points);
+            if (!triangulation) {
+                std::println("Triangulation error: {}", geometry::ConvertGeometryError(triangulation.error()));
+                return -2;
+            }
+            geometry::visualization::Draw(triangulation.value());
+            std::vector<Point2D> polygonPoints;
+            polygonPoints.reserve(triangulation.value().size() * 3);
+
+            for (const auto &triangle : triangulation.value()) {
+                const auto &vertices = triangle.Vertices();
+                std::ranges::copy(vertices, std::back_inserter(polygonPoints));
+            }
+
+            std::println("Точки треангуляции = {:new_line}", polygonPoints);
+            //
+            // Используйте список точек points или свой, чтобы
+            // выполнить алгоритм триангуляции Делоне алгоритмом Боуэра-Ватсона
+            //
+            // После успешного завершения алгоритма - выведите результат для проверки
+            // используя geometry::visualization::Draw
+            //
+        }
+    } catch (const std::logic_error &ex) {
+        std::cerr << ex.what() << std::endl;
         return -1;
+    } catch (const std::runtime_error &ex) {
+        std::cerr << ex.what() << std::endl;
+        return -2;
     }
 
-    geometry::Polygon poly(polygonPoints.value());
-    shapes.push_back(poly);
-    geometry::visualization::Draw(shapes);
-
-    //
-    // Находим список точек, для построения выпуклой оболочки - convex hull - алгоритмом Грэхема
-    // Создаём из них объект класса `Polygon` и добавляем его в список shapes
-    // Рисуем все фигуры
-    //
-
-    //
-    // после изучения графика - нажмите Enter чтобы продолжить выполнение и построить 3ий график
-    //
-
-    {
-        std::vector<Point2D> points = {{0, 0}, {10, 0}, {5, 8}, {15, 5}, {2, 12}};
-
-        const auto triangulation = geometry::triangulation::DelaunayTriangulation(points);
-        if (!triangulation) {
-            std::println("Triangulation error: {}", geometry::ConvertGeometryError(triangulation.error()));
-            return -2;
-        }
-        geometry::visualization::Draw(triangulation.value());
-        std::vector<Point2D> polygonPoints;
-        polygonPoints.reserve(triangulation.value().size() * 3);
-
-        for (const auto &triangle : triangulation.value()) {
-            const auto &vertices = triangle.Vertices();
-            std::ranges::copy(vertices, std::back_inserter(polygonPoints));
-        }
-
-        std::println("Точки треангуляции = {:new_line}", polygonPoints);
-        //
-        // Используйте список точек points или свой, чтобы
-        // выполнить алгоритм триангуляции Делоне алгоритмом Боуэра-Ватсона
-        //
-        // После успешного завершения алгоритма - выведите результат для проверки
-        // используя geometry::visualization::Draw
-        //
-    }
     return 0;
 }
