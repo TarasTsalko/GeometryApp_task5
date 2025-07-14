@@ -4,9 +4,11 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <optional>
 #include <variant>
 #include <vector>
+
 
 namespace geometry::queries {
 
