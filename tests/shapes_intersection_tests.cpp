@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 #include "geometry.hpp"
 #include "intersections.hpp"
+#include "queries.hpp"
+#include "shape_utils.hpp"
 
 namespace geometry::intersections {
 
@@ -148,6 +151,22 @@ TEST(NotSupportedIntersectionTests, NotSupportedIntersectionTests) {
 
     } catch (const std::logic_error &ex) {
         EXPECT_EQ(std::string_view("Unexpected shapes for intersection operation"), ex.what());
+    }
+}
+
+TEST(FindAllCollisionsTest, FindAllCollisionsTest) {
+    const Circle circle({3.0, 3.0}, 2.0);
+    const RegularPolygon poly{{6.0, 4.0}, 1.5, 6};
+    const Rectangle rect{{1.0, 1.0}, 4.0, 4.0};
+    const Rectangle rect2{{10.0, 10.0}, 2.0, 2.0};
+    const Triangle tri({2.0, 2.0}, {4.0, 4.0}, {3.0, 6.0});
+    const Line line{{7.0, 3.0}, {9.0, 3.0}};
+    const std::vector<Shape> shapes = {circle, poly, rect, rect2, tri, line};
+
+    auto collisions = geometry::utils::FindAllCollisions(shapes);
+    ASSERT_EQ(collisions.size(), 6ul);
+    for (const auto &[shape0, shape1] : collisions) {
+        ASSERT_TRUE(geometry::queries::BoundingBoxesOverlap(shape0, shape1));
     }
 }
 
