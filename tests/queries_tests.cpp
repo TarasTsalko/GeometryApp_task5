@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+#include <iostream>
 
+#include "geometry.hpp"
 #include "queries.hpp"
 
 namespace geometry::queries {
@@ -67,6 +69,46 @@ TEST(GetHeightRegularPolygon, GetHeightRegularPolygon) {
     const RegularPolygon poly{{6.0, 4.0}, 1.5, 6};
     const double dist = GetHeight(poly);
     ASSERT_DOUBLE_EQ(dist, 5.5);
+}
+
+TEST(GetBoundBoxCircle, GetBoundBoxCircle) {
+    const Circle circle({3.0, 3.0}, 2.0);
+    const auto bb = GetBoundBox(circle);
+    const BoundingBox etalonBB(1.0, 1.0, 5.0, 5.0);
+    ASSERT_EQ(bb, etalonBB);
+}
+
+TEST(GetBoundBoxRect, GetBoundBoxRect) {
+    const Circle circle({3.0, 3.0}, 2.0);
+    const auto bb = GetBoundBox(circle);
+    const BoundingBox etalonBB(1.0, 1.0, 5.0, 5.0);
+    ASSERT_EQ(bb, etalonBB);
+}
+
+TEST(GetBoundBoxLine, GetBoundBoxLine) {
+    const Line line{{7.0, 3.0}, {9.0, 3.0}};
+    const auto bb = GetBoundBox(line);
+    const BoundingBox etalonBB(7.0, 3.0, 9.0, 3.0);
+    ASSERT_EQ(bb, etalonBB);
+}
+
+TEST(GetBoundBoxTriangle, GetBoundBoxTriangle) {
+    const Triangle tri({2.0, 2.0}, {4.0, 4.0}, {3.0, 6.0});
+    const auto bb = GetBoundBox(tri);
+    const BoundingBox etalonBB(2.0, 2.0, 4.0, 6.0);
+    ASSERT_EQ(bb, etalonBB);
+}
+
+TEST(GetBoundBoxRegularPolygon, GetBoundBoxRegularPolygon) {
+    const RegularPolygon poly{{6.0, 4.0}, 1.5, 6};
+    const auto bb = GetBoundBox(poly);
+
+    const BoundingBox etalonBB(4.5, 2.700961894323342, 7.5, 5.299038105676658);
+    ASSERT_EQ(bb, etalonBB);
+    ASSERT_DOUBLE_EQ(bb.max_x, etalonBB.max_x);
+    ASSERT_DOUBLE_EQ(bb.min_x, etalonBB.min_x);
+    ASSERT_DOUBLE_EQ(bb.min_y, etalonBB.min_y);
+    ASSERT_DOUBLE_EQ(bb.max_y, etalonBB.max_y);
 }
 
 }  // namespace geometry::queries
