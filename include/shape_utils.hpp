@@ -3,8 +3,6 @@
 #include "queries.hpp"
 #include <cassert>
 #include <cstddef>
-#include <iostream>
-#include <limits>
 #include <optional>
 #include <print>
 #include <random>
@@ -100,7 +98,9 @@ inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(std::span<const Sh
 // нужно уточнить реализацию метода Height у разных тел
 // задал вопрос Наставнику, пока внесу реализацию FindHighestShape,
 // так ка это не повлияет на реализацию GetHeight
-std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
+// VSCODE подчеркиваеь функцию и говорит, что может быть нарушен ODR(One Rule Defeniyion)
+// поэтому добовляю inline, даже если компилируется
+inline std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
 
     using namespace queries;
     if (shapes.empty())
