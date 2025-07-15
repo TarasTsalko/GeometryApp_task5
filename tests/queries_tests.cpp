@@ -105,10 +105,61 @@ TEST(GetBoundBoxRegularPolygon, GetBoundBoxRegularPolygon) {
 
     const BoundingBox etalonBB(4.5, 2.700961894323342, 7.5, 5.299038105676658);
     ASSERT_EQ(bb, etalonBB);
-    ASSERT_DOUBLE_EQ(bb.max_x, etalonBB.max_x);
-    ASSERT_DOUBLE_EQ(bb.min_x, etalonBB.min_x);
-    ASSERT_DOUBLE_EQ(bb.min_y, etalonBB.min_y);
-    ASSERT_DOUBLE_EQ(bb.max_y, etalonBB.max_y);
+}
+
+TEST(BoundingBoxesOverlapRegularPolygonCircle, BoundingBoxesOverlapRegularPolygonCircle) {
+    const Circle circle({3.0, 3.0}, 2.0);
+    const RegularPolygon poly{{6.0, 4.0}, 1.5, 6};
+    ASSERT_TRUE(BoundingBoxesOverlap(circle, poly));
+}
+
+TEST(BoundingBoxesOverlapRectTriangle, BoundingBoxesOverlapRectTriangle) {
+    const Rectangle rect{{10.0, 10.0}, 2.0, 2.0};
+    const Triangle tri({2.0, 2.0}, {4.0, 4.0}, {3.0, 6.0});
+    ASSERT_FALSE(BoundingBoxesOverlap(rect, tri));
+}
+
+TEST(BoundingBoxesOverlapRectLine, BoundingBoxesOverlapRectLine) {
+    const Rectangle rect{{10.0, 10.0}, 2.0, 2.0};
+    const Line line{{7.0, 3.0}, {9.0, 3.0}};
+    ASSERT_FALSE(BoundingBoxesOverlap(rect, line));
+}
+
+TEST(BoundingBoxesOverlapTriangleCircle, BoundingBoxesOverlapTriangleCircle) {
+    const Triangle tri({2.0, 2.0}, {4.0, 4.0}, {3.0, 6.0});
+    const Circle circle({3.0, 3.0}, 2.0);
+    ASSERT_TRUE(BoundingBoxesOverlap(tri, circle));
+}
+
+TEST(DistanceBetweenShapesLines, DistanceBetweenShapesLines) {
+    const Line line0{{1.0, 2.0}, {4.0, 5.0}};
+    const Line line1{{7.0, 8.0}, {10.0, 11.0}};
+    auto res = DistanceBetweenShapes(line0, line1);
+    ASSERT_TRUE(res.has_value());
+    ASSERT_DOUBLE_EQ(res.value(), 4.2426406871192848);
+}
+
+TEST(DistanceBetweenShapesCircles, DistanceBetweenShapesCircles) {
+    const Circle circle0({3.0, 3.0}, 2.0);
+    const Circle circle1({0.0, 0.0}, 2.0);
+    const auto res = DistanceBetweenShapes(circle0, circle1);
+    ASSERT_TRUE(res.has_value());
+    ASSERT_DOUBLE_EQ(res.value(), 0.24264068711928477);
+}
+
+TEST(DistanceBetweenShapesCirclesPoint, DistanceBetweenShapesCirclesPoint) {
+    const Circle circle0({3.0, 3.0}, 2.0);
+    const Point2D p(10.0, 10.0);
+    auto res = DistanceBetweenShapes(circle0, p);
+    ASSERT_TRUE(res.has_value());
+    ASSERT_DOUBLE_EQ(res.value(), 7.8994949366116654);
+}
+
+TEST(DistanceBetweenUnsuportedShapes, DistanceBetweenUnsuportedShapes) {
+    const Circle circle0({3.0, 3.0}, 2.0);
+    const Rectangle rect{{10.0, 10.0}, 2.0, 2.0};
+    auto res = DistanceBetweenShapes(circle0, rect);
+    ASSERT_FALSE(res.has_value());
 }
 
 }  // namespace geometry::queries

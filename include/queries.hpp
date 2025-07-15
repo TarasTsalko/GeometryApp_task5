@@ -9,7 +9,6 @@
 #include <variant>
 #include <vector>
 
-
 namespace geometry::queries {
 
 template <class... Ts>
@@ -258,8 +257,9 @@ inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
 struct ShapeToShapeDistanceVisitor {
 
     /* ваш код здесь */
+    // Это повторение DistanceToPoint, так как Variant не содержит Point2D то для вызова
+    // этого случая будет нужна отдельная перегрузка. Уточнить у ревьювера, что так и задуманно?
     double operator()(const Shape &shape, const Point2D &point) const { return DistanceToPoint(shape, point); }
-
     double operator()(const Line &line1, const Line &line2) const {
         // Спросить у ревьювера
         // Пришлось добавить CheckIntersection, так как код
@@ -384,6 +384,17 @@ inline std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Sh
     /* ваш код с ShapeToShapeDistanceVisitor здесь*/
     try {
         return std::visit(ShapeToShapeDistanceVisitor{}, shape1, shape2);
+    } catch (const std::logic_error &e) {
+        std::cerr << e.what() << std::endl;
+        return std::nullopt;
+    }
+}
+
+inline std::optional<double> DistanceBetweenShapes(const Shape &shape, const Point2D &point) {
+
+    try {
+        const double dist = ShapeToShapeDistanceVisitor{}(shape, point);
+        return dist;
     } catch (const std::logic_error &e) {
         std::cerr << e.what() << std::endl;
         return std::nullopt;
