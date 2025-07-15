@@ -179,21 +179,6 @@ void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
      */
 }
 
-std::vector<Point2D> ColllectAllPoints(std::span<const Shape> shapes) {
-
-    std::vector<Point2D> allPoints;
-    rng::for_each(shapes, [&allPoints](const auto &shape) {
-        std::visit(Multilambda{[&](const auto &s) -> void {
-                                   const auto points = s.Vertices();
-                                   allPoints.reserve(allPoints.size() + points.size());
-                                   rng::copy(points, std::back_inserter(allPoints));
-                               },
-                               [&](const Shape &) -> void { std::unreachable(); }},
-                   shape);
-    });
-    return allPoints;
-}
-
 int main() {
     try {
         utils::ShapeGenerator generator(-50.0, 50.0, 5.0, 25.0);
@@ -226,7 +211,7 @@ int main() {
         //
         // Формируем список из вершин всех фигур
         //
-        std::vector<Point2D> points = ColllectAllPoints(shapes);
+        std::vector<Point2D> points = geometry::utils::ColllectAllPoints(shapes);
         const auto polygonPoints = geometry::convex_hull::GrahamScan(points);
         if (!polygonPoints) {
             std::println("GrahamScan error: {}", geometry::ConvertGeometryError(polygonPoints.error()));

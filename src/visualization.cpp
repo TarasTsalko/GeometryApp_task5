@@ -28,6 +28,7 @@ void Draw(std::span<geometry::Shape> shapes) {
     for (const auto &[index, shape] : std::ranges::views::enumerate(shapes)) {
         std::visit(Multilambda{[&](const Line &line) {
                                    const auto lines = line.Lines();
+
                                    plot(lines.x, lines.y)->line_width(2).color("yellow");
                                },
                                [&](const Triangle &tri) {
@@ -53,6 +54,8 @@ void Draw(std::span<geometry::Shape> shapes) {
                    shape);
 
         // Add shape number
+        // Вопрос к ревьювиру: shape.visit (было в прекоде) в VSCODE подчеркивает как ошибку, но
+        // shape.visit компилируется, похоже что не полность поддерживается "подсветка синтаксиса"?
         const auto center = shape.visit([](auto &&s) { return s.Center(); });
         auto t = text(center.x, center.y, std::to_string(index));
         t->font_size(14);

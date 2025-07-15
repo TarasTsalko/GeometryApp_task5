@@ -13,6 +13,11 @@
 
 namespace geometry::utils {
 
+template <class... Ts>
+struct Multilambda : Ts... {
+    using Ts::operator()...;
+};
+
 class ShapeGenerator {
 public:
     ShapeGenerator(double min_coord = -100.0, double max_coord = 100.0, double min_size = 1.0, double max_size = 20.0)
@@ -121,6 +126,22 @@ inline std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
         return std::get<1>(*maxElement);
     }
     return std::nullopt;
+}
+
+inline std::vector<Point2D> ColllectAllPoints(std::span<const Shape> shapes) {
+
+    namespace rng = std::ranges;
+    std::vector<Point2D> allPoints;
+    rng::for_each(shapes, [&allPoints](const auto &shape) {
+        std::visit(Multilambda{[&](const auto &s) -> void {
+                                   const auto points = s.Vertices();
+                                   allPoints.reserve(allPoints.size() + points.size());
+                                   rng::copy(points, std::back_inserter(allPoints));
+                               },
+                               [&](const Shape &) -> void { std::unreachable(); }},
+                   shape);
+    });
+    return allPoints;
 }
 
 }  // namespace geometry::utils

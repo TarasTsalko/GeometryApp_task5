@@ -50,6 +50,7 @@ template <typename T>
     }
 auto compare_points = [](const T &a, const T &b) { return std::tie(a.y, a.x) < std::tie(b.y, b.x); };
 
+// может span, уточнить у ревьювира
 GeometryResult<std::vector<Point2D>> GrahamScan(std::vector<Point2D> &points) {
     if (points.size() < 3)
         return std::unexpected{GeometryError::InvalidInput};
