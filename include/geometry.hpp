@@ -31,8 +31,12 @@ struct Point2D {
     constexpr Point2D(double x, double y) : x(x), y(y) {}
 
     // Comparison
-    bool operator<(const Point2D &other) const noexcept { return x < other.x && y < other.y; }
-    bool operator==(const Point2D &other) const noexcept { return x == other.x && y == other.y; }
+    [[nodiscard]] constexpr bool operator<(const Point2D &other) const noexcept {
+        return std::tie(x, y) < std::tie(other.x, other.y);
+    }
+    [[nodiscard]] constexpr bool operator==(const Point2D &other) const noexcept {
+        return x == other.x && y == other.y;
+    }
 
     // Binary math operators
     [[nodiscard]] Point2D operator+(const Point2D &other) const noexcept { return {x + other.x, y + other.y}; }
@@ -48,7 +52,7 @@ struct Point2D {
     [[nodiscard]] double Length() const noexcept { return std::sqrt(x * x + y * y); }
     [[nodiscard]] double DistanceTo(const Point2D &other) const noexcept { return (*this - other).Length(); }
 
-    Point2D Normalize() {
+    [[nodiscard]] Point2D Normalize() const noexcept {
         const double len = Length();
         return len > 0 ? Point2D{x / len, y / len} : Point2D{0, 0};
     }
