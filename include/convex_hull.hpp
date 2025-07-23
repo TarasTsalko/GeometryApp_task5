@@ -16,7 +16,7 @@ class StackForGrahamScan {
 public:
     void Pop() { hull.pop(); }
 
-    [[nodiscard]] Point2D Top() { return hull.top(); }
+    [[nodiscard]] Point2D Top() const { return hull.top(); }
 
     void Push(const Point2D &point) { hull.push(point); }
 
