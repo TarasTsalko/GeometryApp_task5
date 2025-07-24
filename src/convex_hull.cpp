@@ -1,16 +1,54 @@
 #include "convex_hull.hpp"
 #include "geometry.hpp"
+#include "math_utils.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <expected>
 #include <vector>
 
+#include <stack>
+
 namespace geometry::convex_hull {
 
-double CrossProduct(Point2D p1, Point2D middle, Point2D p2) {
-    auto new_p1 = p1 - middle;
-    auto new_p2 = p2 - middle;
-    return new_p1.Cross(new_p2);
-}
+class StackForGrahamScan {
+
+public:
+    void Pop() { hull.pop(); }
+
+    [[nodiscard]] Point2D Top() const { return hull.top(); }
+
+    void Push(const Point2D &point) { hull.push(point); }
+
+    [[nodiscard]] size_t Size() const noexcept { return hull.size(); };
+
+    [[nodiscard]] bool Empty() const noexcept { return hull.empty(); }
+
+    // Метод для проверки и обработки точек в стеке
+    GeometryResult<bool> IsLeftTurnOrCollinear(const Point2D &point) {
+        if (hull.size() < 2)
+            return std::unexpected<GeometryError>(GeometryError::InsufficientPoints);
+
+        using namespace geometry::math_utils;
+        Point2D top = hull.top();
+        hull.pop();
+        Point2D nextToTop = hull.top();
+        const double cross = CrossProduct(point, top, nextToTop);
+        if (cross >= 0.0) {  // >= 0 для обработки коллинеарных точек
+            hull.push(top);
+            return true;
+        }
+        return false;
+    }
+
+    void RemoveDuplicateStartPoint(const Point2D &point) noexcept {
+        // Удаляем дублирующуюся начальную точку
+        if (hull.size() > 1 && hull.top() == point)
+            hull.pop();
+    }
+
+private:
+    std::stack<Point2D> hull;
+};
 
 // Шаблонная функция для построения части оболочки
 template <typename Iterator>
