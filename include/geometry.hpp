@@ -48,7 +48,11 @@ struct Point2D {
     // и noexcept
     [[nodiscard]] Point2D operator-(const Point2D &other) const noexcept { return {x - other.x, y - other.y}; }
     [[nodiscard]] Point2D operator*(double value) const noexcept { return {x * value, y * value}; }
-    [[nodiscard]] Point2D operator/(double value) const { return {x / value, y / value}; }
+    [[nodiscard]] Point2D operator/(double value) const {
+        if (value == 0.0)
+            throw std::runtime_error("Point2D_operator/:Поппытка деления на ноль");
+        return {x / value, y / value};
+    }
 
     // Binary geometry operations
     [[nodiscard]] double Dot(const Point2D &other) const noexcept { return x * other.x + y * other.y; }
@@ -216,14 +220,14 @@ struct Rectangle {
 
     [[nodiscard]] std::array<Point2D, 4u> Vertices() const noexcept {
         std::array<Point2D, 4u> points;
-        // Идем по часовой стрелке от левой нижней вершины
+        // Идем против часовой стрелки от левой нижней вершины
         points[0] = bottom_left;
-        // левая верхняя вершина
-        points[1] = {bottom_left.x, bottom_left.y + height};
+        // правая нижняя вершина
+        points[1] = {bottom_left.x + width, bottom_left.y};
         // правая верхняя вершина
         points[2] = {bottom_left.x + width, bottom_left.y + height};
-        // правая нижняя вершина
-        points[3] = {bottom_left.x + width, bottom_left.y};
+        // левая верхняя вершина
+        points[3] = {bottom_left.x, bottom_left.y + height};
         return points;
     }
 
