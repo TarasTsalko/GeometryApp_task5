@@ -36,7 +36,10 @@ struct Point2D {
         return std::tie(x, y) < std::tie(other.x, other.y);
     }
     [[nodiscard]] constexpr bool operator==(const Point2D &other) const noexcept {
-        return x == other.x && y == other.y;
+        // точки считаются совпадающими с заданной точностью (если квадрат расстояние между ними меньше EPSILON)
+        // используем квадрат расстояния для оптимизации
+        using namespace math_utils;
+        return this->SquaredDistanceTo(other) < EPSILON;
     }
 
     // Binary math operators
@@ -56,6 +59,11 @@ struct Point2D {
     [[nodiscard]] Point2D Normalize() const noexcept {
         const double len = Length();
         return len > 0 ? Point2D{x / len, y / len} : Point2D{0, 0};
+    }
+
+    [[nodiscard]] double SquaredDistanceTo(const Point2D &other) const noexcept {
+        const Point2D diff = *this - other;
+        return diff.Dot(diff);
     }
 };
 
