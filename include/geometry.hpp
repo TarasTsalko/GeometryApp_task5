@@ -1,4 +1,5 @@
 #pragma once
+#include "math_utils.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -98,10 +99,10 @@ struct BoundingBox {
     };
 
     // Улучшенная реализация оператора сравнения
-    bool operator==(const BoundingBox &other) const noexcept {
-        const double eps = 1e-10;
-        return std::abs(min_x - other.min_x) < eps && std::abs(min_y - other.min_y) < eps &&
-               std::abs(max_x - other.max_x) < eps && std::abs(max_y - other.max_y) < eps;
+    [[nodiscard]] bool operator==(const BoundingBox &other) const noexcept {
+        using namespace math_utils;
+        return std::abs(min_x - other.min_x) < EPSILON && std::abs(min_y - other.min_y) < EPSILON &&
+               std::abs(max_x - other.max_x) < EPSILON && std::abs(max_y - other.max_y) < EPSILON;
     }
 };
 
@@ -151,12 +152,10 @@ struct Triangle {
 
     /* ваш код здесь */
     [[nodiscard]] double Area() const noexcept {
-        auto ab = b - a;
-        auto ac = c - a;
         // 1\2 длинны векторного произведения
         // так же как и с координатами, но блогадаря перегрузкам
         // не нужно работать с координатами на прямую
-        return 0.5 * ab.Cross(ac);
+        return 0.5 * math_utils::CrossProduct(b, a, c);
     }
 
     // Уточнил у наставника, в п7. задания нужно найти фигуру выше всего расположенную
@@ -346,14 +345,9 @@ public:
     /* ваш код здесь */
     template <Container ContainerType>
     Polygon(const ContainerType &points) {
-        points_.reserve(points_.size() + points.size());
+        points_.reserve(points.size());
         std::ranges::copy(points, std::back_inserter(points_));
         CalcBoudingBox();
-    }
-
-    void Clear() noexcept {
-        points_.clear();
-        bounding_box_.min_x = bounding_box_.min_y = bounding_box_.max_x = bounding_box_.max_y = 0.0;
     }
 
     template <Container ContainerType>
