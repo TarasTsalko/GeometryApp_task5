@@ -38,8 +38,8 @@ TEST(TriangleMethods, TriangleMethods) {
 
 TEST(RectangleMethods, RectangleMethods) {
     const Rectangle rect(Point2D{2, 1}, 3, 6);
-    ASSERT_DOUBLE_EQ(rect.width, 3.0);
-    ASSERT_DOUBLE_EQ(rect.height, 6.0);
+    ASSERT_DOUBLE_EQ(rect.GetWidth(), 3.0);
+    ASSERT_DOUBLE_EQ(rect.GetHeight(), 6.0);
     ASSERT_DOUBLE_EQ(rect.Height(), 7.0);
     ASSERT_EQ(rect.Center(), Point2D(3.5, 4));
     ASSERT_DOUBLE_EQ(rect.Area(), 18.0);

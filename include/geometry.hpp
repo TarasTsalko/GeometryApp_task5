@@ -197,37 +197,48 @@ struct Triangle {
 };
 
 struct Rectangle {
-    Point2D bottom_left;
-    double width, height;
+
+    Rectangle(Point2D bottom_left, double width, double height)
+        : bottom_left_(bottom_left), width_(width), height_(height) {
+        if (width_ < 0.0 || height_ < 0.0)
+            throw std::runtime_error(std::format(
+                "Заданы некорректные значения: ширина {} и высоты: {} для класса Rectangle", width_, height_));
+    }
+
+    [[nodiscard]] const Point2D &GetBottomLeft() const noexcept { return bottom_left_; }
+
+    [[nodiscard]] const double GetHeight() const noexcept { return height_; }
+
+    [[nodiscard]] const double GetWidth() const noexcept { return width_; }
 
     /* ваш код здесь */
-    [[nodiscard]] double Area() const noexcept { return height * width; }
+    [[nodiscard]] double Area() const noexcept { return height_ * width_; }
 
-    [[nodiscard]] double Height() const noexcept { return bottom_left.y + height; }
+    [[nodiscard]] double Height() const noexcept { return bottom_left_.y + height_; }
 
     [[nodiscard]] Point2D Center() const noexcept {
-        return {bottom_left.x + width / 2.0, bottom_left.y + height / 2.0};
+        return {bottom_left_.x + width_ / 2.0, bottom_left_.y + height_ / 2.0};
     }
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         BoundingBox bb;
-        bb.min_x = bottom_left.x;
-        bb.min_y = bottom_left.y;
-        bb.max_x = bottom_left.x + width;
-        bb.max_y = bottom_left.y + height;
+        bb.min_x = bottom_left_.x;
+        bb.min_y = bottom_left_.y;
+        bb.max_x = bottom_left_.x + width_;
+        bb.max_y = bottom_left_.y + height_;
         return bb;
     }
 
     [[nodiscard]] std::array<Point2D, 4u> Vertices() const noexcept {
         std::array<Point2D, 4u> points;
         // Идем против часовой стрелки от левой нижней вершины
-        points[0] = bottom_left;
+        points[0] = bottom_left_;
         // правая нижняя вершина
-        points[1] = {bottom_left.x + width, bottom_left.y};
+        points[1] = {bottom_left_.x + width_, bottom_left_.y};
         // правая верхняя вершина
-        points[2] = {bottom_left.x + width, bottom_left.y + height};
+        points[2] = {bottom_left_.x + width_, bottom_left_.y + height_};
         // левая верхняя вершина
-        points[3] = {bottom_left.x, bottom_left.y + height};
+        points[3] = {bottom_left_.x, bottom_left_.y + height_};
         return points;
     }
 
@@ -241,6 +252,10 @@ struct Rectangle {
         lines.y.back() = lines.y.front();
         return lines;
     }
+
+private:
+    Point2D bottom_left_;
+    double width_, height_;
 };
 
 struct RegularPolygon {
@@ -533,8 +548,11 @@ struct std::formatter<geometry::Rectangle> {
 
     template <typename FormatContext>
     auto format(const geometry::Rectangle &r, FormatContext &ctx) const {
-        return std::format_to(ctx.out(), "Rectangle(bottom_left={}, w={:.2f}, h={:.2f})", r.bottom_left, r.width,
-                              r.height);
+        // из-за появления у класса Rectangle пользовательского конструктора, мемберы класса
+        // перешли в private-секцию, из-за этого появился метод GetHeight(), который возвращает
+        // высоту самого прямоугольника, а не высоту на графике
+        return std::format_to(ctx.out(), "Rectangle(bottom_left={}, w={:.2f}, h={:.2f})", r.GetBottomLeft(),
+                              r.GetWidth(), r.GetHeight());
     }
 };
 

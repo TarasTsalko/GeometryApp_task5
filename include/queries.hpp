@@ -91,10 +91,10 @@ struct PointToShapeDistanceVisitor {
 
     double operator()(const Rectangle &rectangle) const {
         // Угловые точки прямоугольника
-        const Point2D &lb = rectangle.bottom_left;
-        const Point2D rb = {lb.x + rectangle.width, lb.y};
-        const Point2D rt = {lb.x + rectangle.width, lb.y + rectangle.height};
-        const Point2D lt = {lb.x, lb.y + rectangle.height};
+        const Point2D &lb = rectangle.GetBottomLeft();
+        const Point2D rb = {lb.x + rectangle.GetWidth(), lb.y};
+        const Point2D rt = {lb.x + rectangle.GetWidth(), lb.y + rectangle.GetHeight()};
+        const Point2D lt = {lb.x, lb.y + rectangle.GetHeight()};
 
         // Проверка на нахождение внутри прямоугольника
         if (point.x >= lb.x - eps && point.x <= rb.x + eps && point.y >= lb.y - eps && point.y <= lt.y + eps) {
