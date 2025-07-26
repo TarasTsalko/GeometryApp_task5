@@ -202,7 +202,7 @@ struct Rectangle {
         : bottom_left_(bottom_left), width_(width), height_(height) {
         if (width_ < 0.0 || height_ < 0.0)
             throw std::runtime_error(std::format(
-                "Заданы некорректные значения: ширина {} и высоты: {} для класса Rectangle", width_, height_));
+                "Заданы некорректные значения: ширина {} и высота: {} для класса Rectangle", width_, height_));
     }
 
     [[nodiscard]] const Point2D &GetBottomLeft() const noexcept { return bottom_left_; }
@@ -275,17 +275,13 @@ struct RegularPolygon {
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         BoundingBox bb;
-        bb.max_x = std::numeric_limits<double>::lowest();
-        bb.max_y = std::numeric_limits<double>::lowest();
-        bb.min_x = std::numeric_limits<double>::max();
-        bb.min_y = std::numeric_limits<double>::max();
-        const auto vertices = Vertices();
-        for (const auto &point : vertices) {
-            bb.max_x = std::max(point.x, bb.max_x);
-            bb.min_x = std::min(point.x, bb.min_x);
-            bb.max_y = std::max(point.y, bb.max_y);
-            bb.min_y = std::min(point.y, bb.min_y);
-        }
+        const auto lines = Lines();
+        const auto [min_it_x, max_it_x] = std::ranges::minmax_element(lines.x);
+        const auto [min_it_y, max_it_y] = std::ranges::minmax_element(lines.y);
+        bb.min_x = *min_it_x;
+        bb.max_x = *max_it_x;
+        bb.min_y = *min_it_y;
+        bb.max_y = *max_it_y;
         return bb;
     }
 
@@ -330,7 +326,8 @@ struct Circle {
     // Должны быть сделана по аналогии с RegularPolygon::Vertices
     //
     std::vector<Point2D> Vertices(size_t N = 30) const {
-        // сделать exception если N < 3 (минимальное число, для описания окружности)
+        if (N < 3)
+            throw std::runtime_error(std::format("Для окружности необходимо задать не менее 3 точек, N = {} ", N));
         std::vector<Point2D> points;
         points.reserve(N);
         const double angleStep = (2 * std::numbers::pi) / N;
