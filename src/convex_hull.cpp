@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <expected>
+#include <span>
 #include <vector>
 
 #include <stack>
@@ -70,7 +71,7 @@ GeometryResult<bool> buildHullPartImpl(Iterator begin, Iterator end, StackForGra
 }
 
 // Обёртка для вызова с разными типами итераторов
-GeometryResult<bool> buildHullPart(const std::vector<Point2D> &points, StackForGrahamScan &hull, bool reverse = false,
+GeometryResult<bool> buildHullPart(const std::span<Point2D> points, StackForGrahamScan &hull, bool reverse = false,
                                    size_t minSize = 2) {
     if (!reverse) {
         return buildHullPartImpl(points.begin(), points.end(), hull, minSize);
@@ -79,17 +80,9 @@ GeometryResult<bool> buildHullPart(const std::vector<Point2D> &points, StackForG
     }
 }
 
-template <typename T>
-    requires requires(T a, T b) {
-        { a.y };
-        { b.y };
-        { a.x };
-        { b.x };
-    }
-auto compare_points = [](const T &a, const T &b) { return std::tie(a.y, a.x) < std::tie(b.y, b.x); };
-
 // может span, уточнить у ревьювира
-GeometryResult<std::vector<Point2D>> GrahamScan(std::vector<Point2D> &points) {
+// UPD: уточнил у ревьювера, заменил на const std::span<Point2D> points
+GeometryResult<std::vector<Point2D>> GrahamScan(std::span<Point2D> points) {
     if (points.size() < 3)
         return std::unexpected{GeometryError::InvalidInput};
 
