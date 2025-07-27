@@ -15,9 +15,12 @@ TEST(LineLineIntersection, LineLineIntersection) {
     const Line l1({10, 1}, {1, 10});
     const auto res = GetIntersectPoints(l0, l1);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 1ul);
+    ASSERT_EQ(res.value().points.size(), 1ul);
     const Point2D point(5.5, 5.5);
-    ASSERT_EQ(res.value().at(0ul), point);
+    const auto intersectionType = res.value().type;
+    const auto &points = res.value().points;
+    ASSERT_EQ(intersectionType, IntersectionType::Point);
+    ASSERT_EQ(points.at(0ul), point);
 }
 
 TEST(LineLineParallel, LineLineParallel) {
@@ -32,9 +35,12 @@ TEST(LineLineCommonPoint, LineLineCommonPoint) {
     const Line l1({5, 5}, {10, 10});
     const auto res = GetIntersectPoints(l0, l1);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 1ul);
+    const auto intersectionType = res.value().type;
+    const auto &points = res.value().points;
+    ASSERT_EQ(intersectionType, IntersectionType::Point);
+    ASSERT_EQ(points.size(), 1ul);
     const Point2D point(5, 5);
-    ASSERT_EQ(res.value().at(0ul), point);
+    ASSERT_EQ(points.at(0ul), point);
 }
 
 TEST(CoincidingLineLine, CoincidingLineLine) {
@@ -42,10 +48,13 @@ TEST(CoincidingLineLine, CoincidingLineLine) {
     const Line l1({-3.0, 4.0}, {2.0, -1.0});
     const auto res = GetIntersectPoints(l0, l1);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 2ul);  // если отрезки совподают, то возвращается 2 точки начала и конца отрезка
+    const auto &points = res.value().points;
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Coincident);
+    ASSERT_EQ(points.size(), 2ul);  // если отрезки совподают, то возвращается 2 точки начала и конца отрезка
     const Point2D point0(-3.0, 4.0), point1{2.0, -1.0};
-    ASSERT_EQ(res.value().at(0ul), point0);
-    ASSERT_EQ(res.value().at(1ul), point1);
+    ASSERT_EQ(points.at(0ul), point0);
+    ASSERT_EQ(points.at(1ul), point1);
 }
 
 TEST(LineLineOverlaping, LineLineOverlaping) {
@@ -53,10 +62,13 @@ TEST(LineLineOverlaping, LineLineOverlaping) {
     const Line l1({3.0, 3.0}, {8.0, 8.0});
     const auto res = GetIntersectPoints(l0, l1);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 2ul);  // если отрезки совподают, то возвращается 2 точки начала и конца отрезка
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Segment);
+    const auto &points = res.value().points;
+    ASSERT_EQ(points.size(), 2ul);  // если отрезки совподают, то возвращается 2 точки начала и конца отрезка
     const Point2D point0(3.0, 3.0), point1{6.0, 6.0};
-    ASSERT_EQ(res.value().at(0ul), point0);
-    ASSERT_EQ(res.value().at(1ul), point1);
+    ASSERT_EQ(points.at(0ul), point0);
+    ASSERT_EQ(points.at(1ul), point1);
 }
 
 TEST(CircleCircleIntersection, CircleCircleIntersection) {
@@ -65,9 +77,12 @@ TEST(CircleCircleIntersection, CircleCircleIntersection) {
     const auto res = GetIntersectPoints(circle0, circle1);
     const Point2D point0(2.0, 4.5825756949558398), point1{2.0, -4.5825756949558398};
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 2ul);
-    ASSERT_EQ(res.value().at(0ul), point0);
-    ASSERT_EQ(res.value().at(1ul), point1);
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Segment);
+    const auto &points = res.value().points;
+    ASSERT_EQ(points.size(), 2ul);
+    ASSERT_EQ(points.at(0ul), point0);
+    ASSERT_EQ(points.at(1ul), point1);
 }
 
 TEST(CircleCircleTangency, CircleCircleTangency) {
@@ -76,18 +91,19 @@ TEST(CircleCircleTangency, CircleCircleTangency) {
     const auto res = GetIntersectPoints(circle0, circle1);
     const Point2D point(0.0, 0.0);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 1ul);
-    ASSERT_EQ(res.value().at(0ul), point);
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Point);
+    const auto &points = res.value().points;
+    ASSERT_EQ(points.size(), 1ul);
+    ASSERT_EQ(points.at(0ul), point);
 }
 
 TEST(NestedCircleCircle, NestedCircleCircle) {
     const Circle circle0(Point2D(0.0, 0.0), 10.0);
     const Circle circle1(Point2D(0.0, 0.0), 5.0);
+    // уточнил у ревьювира, данный случай не считается пересечением
     const auto res = GetIntersectPoints(circle0, circle1);
-    const Point2D point(0.0, 0.0);
-    ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 1ul);
-    ASSERT_EQ(res.value().at(0ul), point);
+    ASSERT_FALSE(res.has_value());
 }
 
 TEST(NotIntersectedCircleCircle, NotIntersectedCircleCircle) {
@@ -103,18 +119,24 @@ TEST(CoincidingCircleCircle, CoincidingCircleCircle) {
     const Circle circle1(center, 3.0);
     const auto res = GetIntersectPoints(circle0, circle1);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 1ul);
-    ASSERT_EQ(res.value().at(0ul), center);
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Coincident);
+    const auto &points = res.value().points;
+    ASSERT_EQ(points.size(), 1ul);
+    ASSERT_EQ(points.at(0ul), center);
 }
 
 TEST(CircleLineIntersection, CircleLineIntersection) {
     const Circle circle({0.0, 0.0}, 5.0);
-    const Line line({-3.0, 4.0}, {3.0, 4.0});
+    const Line line({-10.0, 4.0}, {10.0, 4.0});
     const auto res = GetIntersectPoints(circle, line);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 2ul);
-    ASSERT_EQ(res.value().at(0ul), line.start);
-    ASSERT_EQ(res.value().at(1ul), line.end);
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Segment);
+    const auto &points = res.value().points;
+    ASSERT_EQ(points.size(), 2ul);
+    ASSERT_EQ(points.at(0ul), Point2D(-3.0, 4.0));
+    ASSERT_EQ(points.at(1ul), Point2D(3.0, 4.0));
 }
 
 TEST(CircleLineTangency, CircleLineTangency) {
@@ -122,8 +144,11 @@ TEST(CircleLineTangency, CircleLineTangency) {
     const Line line({0.0, 5.0}, {5.0, 5.0});
     const auto res = GetIntersectPoints(circle, line);
     ASSERT_TRUE(res.has_value());
-    ASSERT_EQ(res.value().size(), 1ul);
-    ASSERT_EQ(res.value().at(0ul), Point2D(0.0, 5.0));
+    const auto intersectionType = res.value().type;
+    ASSERT_EQ(intersectionType, IntersectionType::Point);
+    const auto &points = res.value().points;
+    ASSERT_EQ(points.size(), 1ul);
+    ASSERT_EQ(points.at(0ul), Point2D(0.0, 5.0));
 }
 
 TEST(NotIntersectdCircleLine, NotIntersectdCircleLine) {
@@ -137,10 +162,7 @@ TEST(LineInsideCircle, LineInsideCircle) {
     const Circle circle({0.0, 0.0}, 10.0);
     const Line line({1.0, 1.0}, {2.0, 2.0});
     const auto res = GetIntersectPoints(circle, line);
-    ASSERT_TRUE(res.has_value());  // отрезок внут
-    ASSERT_EQ(res.value().size(), 2ul);
-    ASSERT_EQ(res.value().at(0ul), line.start);
-    ASSERT_EQ(res.value().at(1ul), line.end);
+    ASSERT_FALSE(res.has_value());  // отрезок внутри (пересечения нет)
 }
 
 TEST(NotSupportedIntersectionTests, NotSupportedIntersectionTests) {

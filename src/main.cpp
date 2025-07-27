@@ -65,15 +65,15 @@ void PrintAllIntersections(const Shape &shape, const std::vector<Shape> &others)
     const auto printer = GetPrinter();
     rng::for_each(filteredShapes, [&](const auto &otherShape) {
         GetIntersectPoints(shape, otherShape)
-            .or_else([&]() -> std::optional<std::vector<geometry::Point2D>> {
+            .or_else([&]() -> std::optional<IntersectionResult> {
                 std::println("Фигура {} и фигура {} не пересекаются", std::visit(printer, shape),
                              std::visit(printer, otherShape));
                 return std::nullopt;
             })
-            .and_then([&](const std::vector<geometry::Point2D> &points)
+            .and_then([&](const std::optional<IntersectionResult> &res)
                           -> std::optional<std::vector<geometry::Point2D>> {  // Важно указать возвращаемый тип
                 std::println("Фигура {} и фигура {} пересекаются в точках: {}", std::visit(printer, shape),
-                             std::visit(printer, otherShape), points);
+                             std::visit(printer, otherShape), res->points);
                 return std::nullopt;  // Возвращаем std::nullopt типа std::optional<void>
             });
     });
