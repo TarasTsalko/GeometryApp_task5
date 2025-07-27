@@ -111,21 +111,8 @@ inline std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
     if (shapes.empty())
         return std::nullopt;
 
-    // Получаем преобразованный диапазон
-    auto transformedRange = shapes | std::views::enumerate | std::views::transform([](const auto &pair) {
-                                const auto &[idx, shape] = pair;
-                                return std::tuple{GetHeight(shape), idx};
-                            });
-
-    // Находим максимальный элемент в преобразованном диапазоне
-    auto maxElement = std::ranges::max_element(
-        transformedRange, [](const auto &a, const auto &b) { return std::get<0>(a) < std::get<0>(b); });
-
-    // Проверяем, найден ли элемент
-    if (maxElement != std::ranges::end(transformedRange)) {
-        return std::get<1>(*maxElement);
-    }
-    return std::nullopt;
+    const auto max_it = std::ranges::max_element(shapes, {}, GetHeight);
+    return std::distance(shapes.begin(), max_it);
 }
 
 inline std::vector<Point2D> ColllectAllPoints(std::span<const Shape> shapes) {

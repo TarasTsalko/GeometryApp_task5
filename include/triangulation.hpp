@@ -1,5 +1,6 @@
 #pragma once
 #include "geometry.hpp"
+#include "math_utils.hpp"
 #include <algorithm>
 #include <expected>
 #include <format>
@@ -67,22 +68,22 @@ struct Edge {
     }
 
     bool operator<(const Edge &other) const {
-        if (std::abs(p1.x - other.p1.x) > 1e-10)
+        using namespace math_utils;
+        if (std::abs(p1.x - other.p1.x) > EPSILON)
             return p1.x < other.p1.x;
-        if (std::abs(p1.y - other.p1.y) > 1e-10)
+        if (std::abs(p1.y - other.p1.y) > EPSILON)
             return p1.y < other.p1.y;
-        if (std::abs(p2.x - other.p2.x) > 1e-10)
+        if (std::abs(p2.x - other.p2.x) > EPSILON)
             return p2.x < other.p2.x;
         return p2.y < other.p2.y;
     }
 
     bool operator==(const Edge &other) const {
-        return std::abs(p1.x - other.p1.x) < 1e-10 && std::abs(p1.y - other.p1.y) < 1e-10 &&
-               std::abs(p2.x - other.p2.x) < 1e-10 && std::abs(p2.y - other.p2.y) < 1e-10;
+        using namespace math_utils;
+        return std::abs(p1.x - other.p1.x) < EPSILON && std::abs(p1.y - other.p1.y) < EPSILON &&
+               std::abs(p2.x - other.p2.x) < EPSILON && std::abs(p2.y - other.p2.y) < EPSILON;
     }
 };
-
-inline bool AreEqual(const Point2D &a, const Point2D &b) { return (a - b).Length() < 1e-10; }
 
 inline GeometryResult<std::vector<DelaunayTriangle>> DelaunayTriangulation(std::span<const Point2D> points) {
 
@@ -168,7 +169,7 @@ inline GeometryResult<std::vector<DelaunayTriangle>> DelaunayTriangulation(std::
                            const auto &super_vertices = super_triangle.Vertices();
                            return std::ranges::any_of(super_vertices, [&t_vertices](const Point2D &super_vertex) {
                                return std::ranges::any_of(t_vertices, [&super_vertex](const Point2D &t_vertex) {
-                                   return AreEqual(super_vertex, t_vertex);
+                                   return super_vertex == t_vertex;
                                });
                            });
                        }),

@@ -61,8 +61,8 @@ IntersectionResult IntersectionVisitor::FindLineCircleIntersectionImpl(const geo
     В этом случае:
     * Существует пересечение между бесконечной прямой, проходящей через точки отрезка, и окружностью
     * Однако пересечения с самим отрезком нет, поскольку параметры t для точек пересечения:
-    - t1 = -7.12132
-    - t2 = -2.87868
+    - t1 ~ -7.12132
+    - t2 ~ -2.87868
 
     * Значения t находятся вне диапазона [0, 1], что означает расположение точек пересечения за пределами отрезка
     * Если убрать проверки:
@@ -127,6 +127,7 @@ IntersectionResult IntersectionVisitor::FindLineLineleIntersectionImpl(const geo
     }
 
     // Проверка полного совпадения отрезков
+    // Переписал operator== для Point2D с учетом точности EPSILON из math_utils
     if ((A == C && B == D) || (A == D && B == C)) {
         points.push_back(A);
         points.push_back(B);
