@@ -5,7 +5,6 @@
 #include <optional>
 #include <utility>
 #include <variant>
-#include <vector>
 
 namespace geometry::queries {
 
@@ -61,9 +60,6 @@ private:
     [[nodiscard]] double CalcPointToRegularPolygonDistance(const RegularPolygon &poly) const;
 
     [[nodiscard]] double CalcPointToPolygonDistance(const Polygon &poly) const;
-
-    // Функция для проверки, находится ли точка внутри полигона
-    [[nodiscard]] bool IsPointInPolygon(const Point2D &point, const std::vector<Point2D> &poly) const;
 };
 
 /*

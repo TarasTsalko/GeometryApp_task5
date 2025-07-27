@@ -25,16 +25,16 @@ public:
     [[nodiscard]] bool Empty() const noexcept { return hull.empty(); }
 
     // Метод для проверки и обработки точек в стеке
-    GeometryResult<bool> IsLeftTurnOrCollinear(const Point2D &point) {
+    GeometryResult<bool> IsRightTurnOrCollinear(const Point2D &point) {
         if (hull.size() < 2)
             return std::unexpected<GeometryError>(GeometryError::InsufficientPoints);
 
         using namespace geometry::math_utils;
         Point2D top = hull.top();
         hull.pop();
-        Point2D nextToTop = hull.top();
+        const Point2D nextToTop = hull.top();
         const double cross = CrossProduct(point, top, nextToTop);
-        if (cross >= 0.0) {  // >= 0 для обработки коллинеарных точек
+        if (cross < 0.0) {  // cross < 0.0 для CCW
             hull.push(top);
             return true;
         }
@@ -57,7 +57,7 @@ GeometryResult<bool> buildHullPartImpl(Iterator begin, Iterator end, StackForGra
     for (auto it = begin; it != end; ++it) {
         const auto &point = *it;
         while (hull.Size() >= minSize) {
-            const auto res = hull.IsLeftTurnOrCollinear(point);
+            const auto res = hull.IsRightTurnOrCollinear(point);
             if (res.has_value()) {
                 if (res.value())
                     break;
@@ -91,7 +91,7 @@ GeometryResult<std::vector<Point2D>> GrahamScan(std::span<Point2D> points) {
     // Находим самую нижнюю левую точку и сортируем остальные
     auto compare = [](const Point2D &a, const Point2D &b) {
         if (a.y == b.y)
-            return a.x < b.x;
+            return a.x > b.x;  // > не ошибка, нужно для добавления точек в порядке CCW
         return a.y < b.y;
     };
     std::ranges::sort(points, compare);

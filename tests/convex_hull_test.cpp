@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+#include <print>
 
 #include "convex_hull.hpp"
+#include "math_utils.hpp"
 #include "shape_utils.hpp"
 
 namespace geometry::convex_hull {
@@ -18,8 +20,12 @@ TEST(ConvexHullTest, ConvexHullTest) {
     ASSERT_TRUE(convex_hull.has_value());
     const auto resPoints = convex_hull.value();
     ASSERT_FALSE(resPoints.empty());
-    ASSERT_EQ(resPoints.size(), 9ul);
-    // Вопрос к ревьюверу: как лучше такое протестировать, если сравнивать точки, то может выглядить громостко
+    ASSERT_EQ(resPoints.size(), 7ul);
+    ASSERT_TRUE(math_utils::AllPointsInsideOrOnHull(points, resPoints))
+        << "Some original points are outside the convex hull";
+    ASSERT_TRUE(math_utils::AllHullPointsAreExtreme(points, resPoints))
+        << "Some original points are not extreme points";
+    EXPECT_TRUE(math_utils::IsCounterClockwise(resPoints)) << "Hull points are not in counter-clockwise order";
 }
 
 }  // namespace geometry::convex_hull

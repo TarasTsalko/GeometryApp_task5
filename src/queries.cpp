@@ -162,6 +162,7 @@ double PointToShapeDistanceVisitor::CalcPointToRegularPolygonDistance(const Regu
 }
 
 double PointToShapeDistanceVisitor::CalcPointToPolygonDistance(const Polygon &poly) const {
+    using namespace math_utils;
     const auto &vertices = poly.Vertices();
     if (IsPointInPolygon(point, vertices))
         return 0.0;  // Точка внутри полигона → расстояние 0
@@ -179,23 +180,6 @@ double PointToShapeDistanceVisitor::CalcPointToPolygonDistance(const Polygon &po
     }
 
     return minDistance;
-}
-
-// Функция для проверки, находится ли точка внутри полигона
-bool PointToShapeDistanceVisitor::IsPointInPolygon(const Point2D &point, const std::vector<Point2D> &poly) const {
-    bool inside = false;
-    const size_t n = poly.size();
-
-    for (size_t i = 0, j = n - 1; i < n; j = i++) {
-        const Point2D &vi = poly[i];
-        const Point2D &vj = poly[j];
-        // Проверяем пересечение луча, идущего вправо, с ребром полигона
-        if (((vi.y > point.y) != (vj.y > point.y)) &&
-            (point.x < (vj.x - vi.x) * (point.y - vi.y) / (vj.y - vi.y) + vi.x)) {
-            inside = !inside;
-        }
-    }
-    return inside;
 }
 
 double ShapeToShapeDistanceVisitor::CalcCircleCircleDistance(const Circle &circle1, const Circle &circle2) const {
