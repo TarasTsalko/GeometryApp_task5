@@ -1,13 +1,22 @@
 #pragma once
 #include "geometry.hpp"
 #include "queries.hpp"
+#include <cassert>
+#include <cstddef>
+#include <optional>
 #include <print>
 #include <random>
 #include <ranges>
+#include <span>
 #include <utility>
 #include <vector>
 
 namespace geometry::utils {
+
+template <class... Ts>
+struct Multilambda : Ts... {
+    using Ts::operator()...;
+};
 
 class ShapeGenerator {
 public:
@@ -63,8 +72,22 @@ private:
     std::uniform_int_distribution<int> type_dist;
 };
 
-std::vector<std::pair<Shape, Shape>> FindAllCollisions(DummyClass shapes) {
+inline std::vector<std::pair<Shape, Shape>> FindAllCollisions(std::span<const Shape> shapes) {
     std::vector<std::pair<Shape, Shape>> collisions;
+    using namespace queries;
+    const size_t nShape = shapes.size();
+    collisions.reserve(nShape * nShape);
+
+    std::ranges::for_each(std::views::cartesian_product(shapes, shapes) | std::views::filter([](const auto &pair) {
+                              const auto &shape1 = std::get<0>(pair);
+                              const auto &shape2 = std::get<1>(pair);
+                              return std::addressof(shape1) < std::addressof(shape2);
+                          }) | std::views::filter([](const auto &pair) {
+                              const auto &shape1 = std::get<0>(pair);
+                              const auto &shape2 = std::get<1>(pair);
+                              return BoundingBoxesOverlap(shape1, shape2);
+                          }),
+                          [&](const auto &pair) { collisions.emplace_back(std::get<0>(pair), std::get<1>(pair)); });
 
     /*
      * Используйте библиотеку ranges, чтобы найти все коллизии между фигурами
@@ -77,15 +100,35 @@ std::vector<std::pair<Shape, Shape>> FindAllCollisions(DummyClass shapes) {
     return collisions;
 }
 
-std::optional<size_t> FindHighestShape(DummyClass shapes) {
+// нужно уточнить реализацию метода Height у разных тел
+// задал вопрос Наставнику, пока внесу реализацию FindHighestShape,
+// так ка это не повлияет на реализацию GetHeight
+// VSCODE подчеркиваеь функцию и говорит, что может быть нарушен ODR(One Rule Defeniyion)
+// поэтому добовляю inline, даже если компилируется
+inline std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
 
-    /*
-     * Используйте библиотеку ranges, чтобы найти самую высокую фигуру
-     *
-     * Важно: использование ручной итерации по фигурам не разрешается
-     */
+    using namespace queries;
+    if (shapes.empty())
+        return std::nullopt;
 
-    return std::nullopt;
+    const auto max_it = std::ranges::max_element(shapes, {}, GetHeight);
+    return std::distance(shapes.begin(), max_it);
+}
+
+inline std::vector<Point2D> ColllectAllPoints(std::span<const Shape> shapes) {
+
+    namespace rng = std::ranges;
+    std::vector<Point2D> allPoints;
+    rng::for_each(shapes, [&allPoints](const auto &shape) {
+        std::visit(Multilambda{[&](const auto &s) -> void {
+                                   const auto points = s.Vertices();
+                                   allPoints.reserve(allPoints.size() + points.size());
+                                   rng::copy(points, std::back_inserter(allPoints));
+                               },
+                               [&](const Shape &) -> void { std::unreachable(); }},
+                   shape);
+    });
+    return allPoints;
 }
 
 }  // namespace geometry::utils
