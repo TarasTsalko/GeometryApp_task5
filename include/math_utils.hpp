@@ -28,6 +28,8 @@ bool AllHullPointsAreExtreme(const std::vector<Point2D> &points, const std::vect
 
 bool IsCounterClockwise(const std::vector<Point2D> &hull);
 
+void SortPointsCounterClockwise(Point2D &a, Point2D &b, Point2D &c);
+
 }  // namespace geometry::math_utils
 
 namespace geometry {

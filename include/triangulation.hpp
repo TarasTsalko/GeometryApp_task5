@@ -2,6 +2,7 @@
 #include "geometry.hpp"
 #include "math_utils.hpp"
 #include <algorithm>
+#include <cassert>
 #include <expected>
 #include <format>
 #include <limits>
@@ -14,7 +15,9 @@ namespace geometry::triangulation {
 struct DelaunayTriangle {
     Point2D a, b, c;
 
-    DelaunayTriangle(Point2D a, Point2D b, Point2D c) : a(a), b(b), c(c) {}
+    DelaunayTriangle(Point2D a, Point2D b, Point2D c) : a(a), b(b), c(c) {
+        math_utils::SortPointsCounterClockwise(a, b, c);
+    }
 
     bool operator<(const DelaunayTriangle &other) const {
         // Используем std::tie для создания кортежа из вершин треугольника
@@ -52,9 +55,8 @@ struct DelaunayTriangle {
     std::vector<Point2D> Vertices() const { return {a, b, c}; }
 
     bool operator==(const DelaunayTriangle &other) const {
-        return (a == other.a && b == other.b && c == other.c) || (a == other.a && b == other.c && c == other.b) ||
-               (a == other.b && b == other.a && c == other.c) || (a == other.b && b == other.c && c == other.a) ||
-               (a == other.c && b == other.a && c == other.b) || (a == other.c && b == other.b && c == other.a);
+        // Поскольку точки уже отсортированы CCW, достаточно проверить прямой порядок
+        return (a == other.a && b == other.b && c == other.c);
     }
 };
 

@@ -112,5 +112,22 @@ bool IsCounterClockwise(const std::vector<Point2D> &poly) {
     // Определение ориентации
     return signedArea > 0;
 }
+void SortPointsCounterClockwise(Point2D &a, Point2D &b, Point2D &c) {
+    // Находим среднюю точку (можно использовать любую из трёх)
+    Point2D middle = (a + b + c) / 3.0;
+
+    // Проверяем текущий порядок
+    const double cp1 = CrossProduct(b, middle, c);
+    const double cp2 = CrossProduct(c, middle, a);
+    const double cp3 = CrossProduct(a, middle, b);
+
+    // Если все произведения имеют одинаковый знак - порядок верный
+    if ((cp1 >= 0 && cp2 >= 0 && cp3 >= 0) || (cp1 <= 0 && cp2 <= 0 && cp3 <= 0)) {
+        return;  // Порядок уже против часовой стрелки
+    }
+
+    // Иначе меняем местами две точки
+    std::swap(b, c);
+}
 
 }  // namespace geometry::math_utils
