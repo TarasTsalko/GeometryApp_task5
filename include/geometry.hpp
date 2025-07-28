@@ -155,8 +155,8 @@ struct Rectangle {
     Rectangle(Point2D bottom_left, double width, double height)
         : bottom_left_(bottom_left), width_(width), height_(height) {
         if (width_ < 0.0 || height_ < 0.0)
-            throw std::runtime_error(std::format(
-                "Заданы некорректные значения: ширина {} и высота: {} для класса Rectangle", width_, height_));
+            throw std::runtime_error(
+                std::format("Incorrect parameters for Rectangle width {}, height {}", width_, height_));
     }
 
     [[nodiscard]] const Point2D &GetBottomLeft() const noexcept { return bottom_left_; }
@@ -213,12 +213,13 @@ private:
 };
 
 struct RegularPolygon {
-    Point2D center_p;
-    double radius;
-    int sides;
 
     constexpr RegularPolygon(Point2D center, double radius, int sides)
-        : center_p(center), radius(radius), sides(sides) {}
+        : center_p(center), radius(radius), sides(sides) {
+        if (radius <= 0.0 || sides <= 0)
+            throw std::runtime_error(
+                std::format("Incorrect parameters for RegularPolygon radius = {} and sides = {}", radius, sides));
+    }
 
     [[nodiscard]] double Height() const noexcept {
         // В случаи вписанной окружности h правельного многоугольника равна r - вписанной окружности
@@ -226,6 +227,8 @@ struct RegularPolygon {
     }
 
     [[nodiscard]] Point2D Center() const noexcept { return center_p; }
+    [[nodiscard]] double Radius() const noexcept { return radius; }
+    [[nodiscard]] int Sides() const noexcept { return sides; }
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         BoundingBox bb;
@@ -262,26 +265,36 @@ struct RegularPolygon {
         lines.y.push_back(lines.Front().y);
         return lines;
     }
-};
 
-struct Circle {
+private:
     Point2D center_p;
     double radius;
+    int sides;
+};
 
-    constexpr Circle(Point2D center, double radius) : center_p(center), radius(radius) {}
+// У части структур Circle, Rectangle и RegularPolygon закрыты member-ы
+// по сути это уже классы, но не буду менять на class, так как это и так прекод
+struct Circle {
+
+    constexpr Circle(Point2D center, double radius) : center_p(center), radius(radius) {
+        if (radius <= 0.0)
+            throw std::runtime_error(std::format("Incorrect parameters for Circle radius = {}", radius));
+    }
 
     [[nodiscard]] BoundingBox BoundBox() const noexcept {
         return {center_p.x - radius, center_p.y - radius, center_p.x + radius, center_p.y + radius};
     }
-    double Height() const noexcept { return center_p.y + radius; }
-    Point2D Center() const noexcept { return center_p; }
+
+    [[nodiscard]] double Height() const noexcept { return center_p.y + radius; }
+    [[nodiscard]] Point2D Center() const noexcept { return center_p; }
+    [[nodiscard]] double Radius() const noexcept { return radius; }
 
     //
     // Должны быть сделана по аналогии с RegularPolygon::Vertices
     //
     std::vector<Point2D> Vertices(size_t N = 30) const {
         if (N < 3)
-            throw std::runtime_error(std::format("Для окружности необходимо задать не менее 3 точек, N = {} ", N));
+            throw std::runtime_error(std::format("At least 3 points are required to define a circle, N = {}", N));
         std::vector<Point2D> points;
         points.reserve(N);
         const double angleStep = (2 * std::numbers::pi) / N;
@@ -304,6 +317,10 @@ struct Circle {
         lines.y.push_back(p.y);
         return lines;
     }
+
+private:
+    Point2D center_p;
+    double radius;
 };
 
 // произврльное хранилише для точек разных объектов, чтобы единообразно
@@ -405,13 +422,6 @@ private:
 
 using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Polygon>;
 
-/*
- * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
- */
-struct DummyClass {
-    DummyClass(std::vector<Shape>) {}
-};
-
 enum class GeometryError { Unsupported, NoIntersection, InvalidInput, DegenrateCase, InsufficientPoints };
 
 inline std::string ConvertGeometryError(const GeometryError &geometryError) {
@@ -489,7 +499,7 @@ struct std::formatter<geometry::Circle> {
 
     template <typename FormatContext>
     auto format(const geometry::Circle &c, FormatContext &ctx) const {
-        return std::format_to(ctx.out(), "Circle(center={}, r={:.2f})", c.center_p, c.radius);
+        return std::format_to(ctx.out(), "Circle(center={}, r={:.2f})", c.Center(), c.Radius());
     }
 };
 
@@ -513,8 +523,8 @@ struct std::formatter<geometry::RegularPolygon> {
 
     template <typename FormatContext>
     auto format(const geometry::RegularPolygon &p, FormatContext &ctx) const {
-        return std::format_to(ctx.out(), "RegularPolygon(center={}, r={:.2f}, sides={})", p.center_p, p.radius,
-                              p.sides);
+        return std::format_to(ctx.out(), "RegularPolygon(center={}, r={:.2f}, sides={})", p.Center(), p.Radius(),
+                              p.Sides());
     }
 };
 template <>

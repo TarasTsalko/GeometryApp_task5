@@ -13,15 +13,15 @@ IntersectionResult IntersectionVisitor::FindLineCircleIntersectionImpl(const geo
     // Вектор направления отрезка
     const Point2D dir = line.end - line.start;
     // Векторы от центра окружности до концов отрезка
-    const Point2D centerToStart = line.start - circle.center_p;
-    const Point2D centerToEnd = line.end - circle.center_p;
+    const Point2D centerToStart = line.start - circle.Center();
+    const Point2D centerToEnd = line.end - circle.Center();
 
     std::vector<Point2D> points;
     IntersectionType type = IntersectionType::None;
 
     // Проверяем, находятся ли концы отрезка внутри окружности
-    bool startInside = centerToStart.Dot(centerToStart) < circle.radius * circle.radius + EPSILON;
-    bool endInside = centerToEnd.Dot(centerToEnd) < circle.radius * circle.radius + EPSILON;
+    bool startInside = centerToStart.Dot(centerToStart) < circle.Radius() * circle.Radius() + EPSILON;
+    bool endInside = centerToEnd.Dot(centerToEnd) < circle.Radius() * circle.Radius() + EPSILON;
 
     // Если оба конца внутри, проверяем ближайшую точку
     if (startInside && endInside) {
@@ -30,8 +30,8 @@ IntersectionResult IntersectionVisitor::FindLineCircleIntersectionImpl(const geo
         t = std::max(0.0, std::min(1.0, t));
 
         Point2D closestPoint = line.start + dir * t;
-        if ((closestPoint - circle.center_p).Dot(closestPoint - circle.center_p) <
-            circle.radius * circle.radius + EPSILON) {
+        if ((closestPoint - circle.Center()).Dot(closestPoint - circle.Center()) <
+            circle.Radius() * circle.Radius() + EPSILON) {
             // Отрезок полностью внутри, пересечений нет ( уточнил у ревьювера )
             type = IntersectionType::None;
             return {type, points};
@@ -39,9 +39,10 @@ IntersectionResult IntersectionVisitor::FindLineCircleIntersectionImpl(const geo
     }
 
     // Коэффициенты квадратного уравнения
-    const double a = dir.Dot(dir);                                                      // a = |d|^2
-    const double b = 2 * centerToStart.Dot(dir);                                        // b = 2 * centerToStart * d
-    const double c = centerToStart.Dot(centerToStart) - circle.radius * circle.radius;  // c = |centerToStart|^2 - r^2
+    const double a = dir.Dot(dir);                // a = |d|^2
+    const double b = 2 * centerToStart.Dot(dir);  // b = 2 * centerToStart * d
+    const double c =
+        centerToStart.Dot(centerToStart) - circle.Radius() * circle.Radius();  // c = |centerToStart|^2 - r^2
 
     // Вычисление дискриминанта
     double discriminant = b * b - 4 * a * c;
@@ -166,45 +167,47 @@ IntersectionResult IntersectionVisitor::FindLineLineleIntersectionImpl(const geo
 
 IntersectionResult IntersectionVisitor::FindCircleCircleIntersectionImpl(const geometry::Circle &circle1,
                                                                          const geometry::Circle &circle2) const {
-    const Point2D dir = circle2.center_p - circle1.center_p;
+    const Point2D dir = circle2.Center() - circle1.Center();
     const double dist = dir.Length();
     IntersectionType type = IntersectionType::None;
     std::vector<Point2D> points;
 
     // нет пересечений
-    if (dist > circle1.radius + circle2.radius)
+    if (dist > circle1.Radius() + circle2.Radius())
         return {IntersectionType::None, points};
 
     // одна окружность внутри другой
-    if (dist < fabs(circle1.radius - circle2.radius)) {
+    if (dist < fabs(circle1.Radius() - circle2.Radius())) {
         // возвращаем центр меньшей окружности
         return {IntersectionType::None, points};
     }
 
     // если окружности совпадают
-    if (dist == 0.0 && circle1.radius == circle2.radius) {
+    if (dist == 0.0 && circle1.Radius() == circle2.Radius()) {
         points.push_back(circle1.Center());
         type = IntersectionType::Coincident;
         return {type, points};
     }
 
     // расстояния от центра первой окружности до точки, которая лежит на линии, соединяющей центры двух окружностей
-    const double a = (circle1.radius * circle1.radius - circle2.radius * circle2.radius + dist * dist) / (2 * dist);
+    const double a =
+        (circle1.Radius() * circle1.Radius() - circle2.Radius() * circle2.Radius() + dist * dist) / (2 * dist);
 
     // Точка на линии между центрами
-    const double x0 = circle1.center_p.x + (a * dir.x) / dist;
-    const double y0 = circle1.center_p.y + (a * dir.y) / dist;
+    const auto center1 = circle1.Center();
+    const double x0 = center1.x + (a * dir.x) / dist;
+    const double y0 = center1.y + (a * dir.y) / dist;
 
     // Случай касания (внутреннего или внешнего)
-    if (fabs(dist - (circle1.radius + circle2.radius)) < EPSILON ||
-        fabs(dist - (circle1.radius - circle2.radius)) < EPSILON) {
+    if (fabs(dist - (circle1.Radius() + circle2.Radius())) < EPSILON ||
+        fabs(dist - (circle1.Radius() - circle2.Radius())) < EPSILON) {
         points.push_back(Point2D{x0, y0});
         type = IntersectionType::Point;
         return {type, points};
     }
 
     // Случай двух точек пересечения
-    const double h = sqrt(circle1.radius * circle1.radius - a * a);
+    const double h = sqrt(circle1.Radius() * circle1.Radius() - a * a);
     const double rx = -dir.y * (h / dist);
     const double ry = dir.x * (h / dist);
 

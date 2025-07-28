@@ -9,11 +9,22 @@ TEST(CircleMethods, CircleMethods) {
     Circle circle(center, 15.0);
 
     ASSERT_EQ(circle.Center(), center);
-    ASSERT_DOUBLE_EQ(circle.radius, 15.0);
+    ASSERT_DOUBLE_EQ(circle.Radius(), 15.0);
 
     ASSERT_DOUBLE_EQ(circle.Height(), 22.0);  // centre.y + radius
     const BoundingBox box{-10.0, -8.0, 20.0, 22.0};
     ASSERT_EQ(box, circle.BoundBox());
+}
+
+TEST(CircleMethodsNotEnoughPoints, CircleMethodsNotEnoughPoints) {
+    const Point2D center(5.0, 7.0);
+
+    try {
+        Circle circle(center, 15.0);
+        circle.Vertices(2);
+    } catch (const std::runtime_error &ex) {
+        EXPECT_EQ(std::string_view("At least 3 points are required to define a circle, N = 2"), ex.what());
+    }
 }
 
 TEST(LineMethods, LineMethods) {
@@ -47,13 +58,38 @@ TEST(RectangleMethods, RectangleMethods) {
     ASSERT_EQ(rect.BoundBox(), box);
 }
 
+TEST(RectangleIncorrectParameters, RectangleIncorrectParameters) {
+
+    try {
+        const Rectangle rect(Point2D{2, 1}, -3, -6);
+    } catch (const std::runtime_error &ex) {
+        EXPECT_EQ(std::string_view("Incorrect parameters for Rectangle width -3, height -6"), ex.what());
+    }
+}
+
+TEST(CircleIncorrectParameters, CircleIncorrectParameters) {
+    try {
+        const Circle rect(Point2D{2, 1}, -3);
+    } catch (const std::runtime_error &ex) {
+        EXPECT_EQ(std::string_view("Incorrect parameters for Circle radius = -3"), ex.what());
+    }
+}
+
+TEST(RegularPolygonIncorrectParameters, RegularPolygonIncorrectParameters) {
+    try {
+        const RegularPolygon poly(Point2D{3.5, 7.0}, 0.0, 0);
+    } catch (const std::runtime_error &ex) {
+        EXPECT_EQ(std::string_view("Incorrect parameters for RegularPolygon radius = 0 and sides = 0"), ex.what());
+    }
+}
+
 TEST(RegularPolygonMethods, RegularPolygonMethods) {
     const Point2D center = {3.5, 7.0};
     const RegularPolygon poly(center, 100.0, 3);
     ASSERT_DOUBLE_EQ(poly.Height(), 107.0);
     ASSERT_EQ(poly.Center(), center);
-    ASSERT_EQ(poly.sides, 3);
-    ASSERT_EQ(poly.radius, 100.0);
+    ASSERT_EQ(poly.Sides(), 3);
+    ASSERT_EQ(poly.Radius(), 100.0);
     ASSERT_EQ(poly.Vertices().size(), 3);
     ASSERT_EQ(poly.Lines().x.size(), 4);  // первая точка добовляется дважды, чтобы замкнуть
     ASSERT_EQ(poly.Lines().y.size(), 4);  // первая точка добовляется дважды, чтобы замкнуть

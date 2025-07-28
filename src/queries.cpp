@@ -88,9 +88,9 @@ double PointToShapeDistanceVisitor::CalcPointToCircleDistance(const Circle &circ
     const double d = dir.Length();
 
     // Определяем итоговое расстояние
-    if (d > circle.radius) {
-        return d - circle.radius;  // Точка снаружи
-    } else if (d <= circle.radius) {
+    if (d > circle.Radius()) {
+        return d - circle.Radius();  // Точка снаружи
+    } else if (d <= circle.Radius()) {
         return 0.0;  // Точка внутри или на окружности (уточнил у ревьювера)
     } else {
         std::unreachable();  // без else выдается warning, что не все пути выполнения контролируются
@@ -122,23 +122,23 @@ double PointToShapeDistanceVisitor::CalcPointToSegmentDistance(const Point2D &a,
 
 double PointToShapeDistanceVisitor::CalcPointToRegularPolygonDistance(const RegularPolygon &poly) const {
     using namespace math_utils;
-    const double distToCenter = (point - poly.center_p).Length();
+    const double distToCenter = (point - poly.Center()).Length();
 
     // Проверка, находится ли точка внутри описанной окружности
-    if (distToCenter <= poly.radius + EPSILON) {
-        const Point2D relPoint = point - poly.center_p;
+    if (distToCenter <= poly.Radius() + EPSILON) {
+        const Point2D relPoint = point - poly.Center();
         double pointAngle = std::atan2(relPoint.y, relPoint.x);
-        double segmentAngle = 2 * M_PI / poly.sides;
+        double segmentAngle = 2 * M_PI / poly.Sides();
 
         // Определение сектора многоугольника
         int sector = static_cast<int>(std::floor(pointAngle / segmentAngle + 0.5));
-        sector = (sector % poly.sides + poly.sides) % poly.sides;
+        sector = (sector % poly.Sides() + poly.Sides()) % poly.Sides();
 
         // Вычисление углов и координат вершин сектора
         const double angle1 = sector * segmentAngle;
         const double angle2 = (sector + 1) * segmentAngle;
-        const Point2D v1 = {poly.radius * std::cos(angle1), poly.radius * std::sin(angle1)};
-        const Point2D v2 = {poly.radius * std::cos(angle2), poly.radius * std::sin(angle2)};
+        const Point2D v1 = {poly.Radius() * std::cos(angle1), poly.Radius() * std::sin(angle1)};
+        const Point2D v2 = {poly.Radius() * std::cos(angle2), poly.Radius() * std::sin(angle2)};
 
         // Проверка положения точки относительно сектора
         const Point2D vec1 = v2 - v1;
@@ -152,8 +152,8 @@ double PointToShapeDistanceVisitor::CalcPointToRegularPolygonDistance(const Regu
     // Поиск минимального расстояния до всех сторон
     const std::vector<Point2D> &vertices = poly.Vertices();
     double minDist = std::numeric_limits<double>::max();
-    for (int i = 0; i < poly.sides; ++i) {
-        const int j = (i + 1) % poly.sides;
+    for (int i = 0; i < poly.Sides(); ++i) {
+        const int j = (i + 1) % poly.Sides();
         double dist = CalcPointToSegmentDistance(vertices[i], vertices[j]);
         minDist = std::min(minDist, dist);
     }
@@ -183,17 +183,19 @@ double PointToShapeDistanceVisitor::CalcPointToPolygonDistance(const Polygon &po
 }
 
 double ShapeToShapeDistanceVisitor::CalcCircleCircleDistance(const Circle &circle1, const Circle &circle2) const {
-    const double dist = (circle2.center_p - circle1.center_p).Length();
-    if (dist <= fabs(circle1.radius - circle2.radius)) {
+    const double R1 = circle1.Radius();
+    const double R2 = circle2.Radius();
+    const double dist = (circle2.Center() - circle1.Center()).Length();
+    if (dist <= fabs(R1 - R2)) {
         // Одна окружность внутри другой
-        return -(std::abs(circle1.radius - circle2.radius) - dist);  // отрицательное значение
-    } else if (dist < circle1.radius + circle2.radius) {
+        return -(std::abs(R1 - R2) - dist);  // отрицательное значение
+    } else if (dist < R1 + R2) {
         // Окружности пересекаются
         return 0.0;
     }
 
     // Окружности не пересекаются
-    return dist - (circle1.radius + circle2.radius);
+    return dist - (R1 + R2);
 }
 
 double ShapeToShapeDistanceVisitor::CalcLineLineDistance(const Line &line1, const Line &line2) const {

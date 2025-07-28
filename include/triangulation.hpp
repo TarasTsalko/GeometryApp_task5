@@ -25,9 +25,10 @@ struct DelaunayTriangle {
     }
 
     bool ContainsPoint(const Point2D &p) const {
+        using namespace math_utils;
         Point2D center = Circumcenter();
         double radius = Circumradius();
-        return center.DistanceTo(p) <= radius + 1e-10;
+        return center.DistanceTo(p) <= radius + EPSILON;
     }
 
     Point2D Circumcenter() const {
